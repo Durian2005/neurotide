@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# Local editor and WorkBuddy files
+.trae/
+.workbuddy/
+
+# Personal or local chat data
+sample-chat.txt
+test-chat.txt
+
+# Logs and temporary files
+*.log
+*.tmp
