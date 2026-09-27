@@ -10,6 +10,44 @@ export interface MessageSentiment {
   raw: number
 }
 
+export interface ScreenshotSentiment extends MessageSentiment {
+  /** 当前图片识别到的原始文本行 */
+  text: string
+  /** 单图归一化分值，范围 [-1, 1] */
+  score: number
+  /** 情绪词命中次数，重复出现在不同文本行时分别计数 */
+  positiveHitCount: number
+  negativeHitCount: number
+  /** 词典规则识别出的词汇，不代表临床结论 */
+  label: 'positive' | 'neutral' | 'negative'
+}
+
+/** 仅对当前截图 OCR 输出的文字做汇总，不构造日期或坐标信息。 */
+export function analyzeScreenshotText(text: string): ScreenshotSentiment {
+  const normalized = text.replace(/\r\n?/g, '\n').replace(/[\t\u00a0]+/g, ' ')
+  const lines = normalized
+    .split('\n')
+    .map((line) => line.replace(/^\s*(?:[-—·•]|\d{1,2}:\d{2})\s*/, '').trim())
+    .filter(Boolean)
+  const positiveWords = lines.flatMap((line) => analyzeText(line).positiveWords)
+  const negativeWords = lines.flatMap((line) => analyzeText(line).negativeWords)
+  const raw = positiveWords.length - negativeWords.length
+  const score = positiveWords.length + negativeWords.length === 0
+    ? 0
+    : raw / (positiveWords.length + negativeWords.length)
+
+  return {
+    text: normalized.trim(),
+    positiveWords: [...new Set(positiveWords)],
+    negativeWords: [...new Set(negativeWords)],
+    positiveHitCount: positiveWords.length,
+    negativeHitCount: negativeWords.length,
+    raw,
+    score,
+    label: score >= 0.12 ? 'positive' : score <= -0.12 ? 'negative' : 'neutral',
+  }
+}
+
 // 积极词典（60 词）
 const POSITIVE_WORDS: string[] = [
   '开心', '快乐', '高兴', '兴奋', '幸福', '喜悦', '满足', '喜欢', '爱', '温暖',

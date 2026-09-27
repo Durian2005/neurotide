@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import UploadPanel from './components/UploadPanel'
 import CalendarHeatmap from './components/CalendarHeatmap'
 import DayDetail from './components/DayDetail'
+import ScreenshotMode from './components/ScreenshotMode'
 import { RANGE_LABEL, buildOverview, filterByRange, parseChatLog } from './utils/parser'
 import type { DailyMood, ParseResult, TimeRange } from './utils/parser'
 import { buildSampleChatLog } from './utils/sampleData'
@@ -10,8 +11,10 @@ import { formatFullDate, formatScore } from './utils/format'
 import { DICTIONARY_SIZE, MOOD_TEXT_CLASS, moodLabel, moodLevel } from './utils/sentiment'
 
 const RANGES: TimeRange[] = ['3m', '6m', 'all']
+type AppMode = 'timeline' | 'screenshot'
 
 export default function App() {
+  const [mode, setMode] = useState<AppMode>('timeline')
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [data, setData] = useState<ParseResult | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
@@ -78,12 +81,38 @@ export default function App() {
           </div>
         </header>
 
-        <UploadPanel
-          onText={handleText}
-          onLoadSample={handleLoadSample}
-          fileName={fileName}
-          error={error}
-        />
+        <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-3">
+          <h2 className="mb-2 px-1 text-xs font-semibold tracking-wider text-slate-400">分析模式</h2>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label="选择分析模式">
+            <button
+              type="button"
+              aria-pressed={mode === 'timeline'}
+              onClick={() => setMode('timeline')}
+              className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${mode === 'timeline' ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-200' : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+            >
+              <span className="block text-xs font-semibold">聊天记录 TXT</span>
+              <span className="mt-1 block text-[10px] opacity-70">按日期生成情绪日历</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode === 'screenshot'}
+              onClick={() => setMode('screenshot')}
+              className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${mode === 'screenshot' ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-200' : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+            >
+              <span className="block text-xs font-semibold">聊天截图</span>
+              <span className="mt-1 block text-[10px] opacity-70">单图 OCR 与情绪分析</span>
+            </button>
+          </div>
+        </section>
+
+        {mode === 'timeline' && (
+          <>
+            <UploadPanel
+              onText={handleText}
+              onLoadSample={handleLoadSample}
+              fileName={fileName}
+              error={error}
+            />
 
         <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
           <h2 className="mb-3 text-xs font-semibold tracking-wider text-slate-400">时间筛选</h2>
@@ -188,20 +217,32 @@ export default function App() {
           </p>
           <p>所有解析与计算均在浏览器完成，文件不会离开本机。</p>
         </div>
+          </>
+        )}
+        {mode === 'screenshot' && (
+          <div className="mt-auto pt-2 text-[10px] leading-relaxed text-slate-600">
+            截图 OCR 完全在本地执行，不调用外部 API；词典情绪结果仅供参考。
+          </div>
+        )}
       </aside>
 
-      {/* 右侧 70% Canvas 可视化画布 */}
-      <main className="relative h-full min-w-0 flex-1 p-4">
-        <CalendarHeatmap
-          days={filteredDays}
-          selectedDate={selectedDate}
-          rangeLabel={RANGE_LABEL[range]}
-          canvasRef={canvasRef}
-          onSelect={handleSelect}
-        />
-        <AnimatePresence>
-          {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDate(null)} />}
-        </AnimatePresence>
+      <main className={`relative h-full min-w-0 flex-1 p-4 ${mode === 'screenshot' ? 'overflow-hidden' : ''}`}>
+        {mode === 'screenshot' ? (
+          <ScreenshotMode />
+        ) : (
+          <>
+            <CalendarHeatmap
+              days={filteredDays}
+              selectedDate={selectedDate}
+              rangeLabel={RANGE_LABEL[range]}
+              canvasRef={canvasRef}
+              onSelect={handleSelect}
+            />
+            <AnimatePresence>
+              {selectedDay && <DayDetail day={selectedDay} onClose={() => setSelectedDate(null)} />}
+            </AnimatePresence>
+          </>
+        )}
       </main>
     </div>
   )
