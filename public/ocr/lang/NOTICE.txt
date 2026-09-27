@@ -1,0 +1,7 @@
+NeuroTide includes the Simplified Chinese OCR model chi_sim.traineddata from tesseract-ocr/tessdata_fast.
+
+Source: https://github.com/tesseract-ocr/tessdata_fast
+Model: fast integer LSTM trained data for Simplified Chinese (chi_sim)
+License: Apache License 2.0
+
+The model is processed by Tesseract.js and runs locally in the user's browser.
