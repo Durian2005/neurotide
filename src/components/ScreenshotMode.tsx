@@ -5,8 +5,18 @@ import { analyzeScreenshotText } from '../utils/sentiment'
 import type { ScreenshotSentiment } from '../utils/sentiment'
 import { recognizeChineseScreenshot } from '../utils/ocr'
 import type { OcrProgress } from '../utils/ocr'
+import DateWheelPicker from './DateWheelPicker'
+import TimeCoordinateChart from './TimeCoordinateChart'
+import { parseTimeCoordinates } from '../utils/timeCoordinates'
+import type { TimeCoordinate } from '../utils/timeCoordinates'
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024
+const MAX_COORDINATE_BYTES = 2 * 1024 * 1024
+
+function today(): Date {
+  const value = new Date()
+  return new Date(value.getFullYear(), value.getMonth(), value.getDate())
+}
 
 function scoreLabel(label: ScreenshotSentiment['label']): string {
   if (label === 'positive') return '整体偏积极'
@@ -33,6 +43,11 @@ export default function ScreenshotMode() {
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [coordinatePoints, setCoordinatePoints] = useState<TimeCoordinate[]>([])
+  const [coordinateFileName, setCoordinateFileName] = useState('')
+  const [coordinateError, setCoordinateError] = useState('')
+  const coordinateInputRef = useRef<HTMLInputElement>(null)
 
   const result = useMemo(() => (text.trim() ? analyzeScreenshotText(text) : null), [text])
   const positiveWords = useMemo(() => wordFrequency(result?.positiveWords ?? []), [result])
@@ -71,6 +86,45 @@ export default function ScreenshotMode() {
     if (file) chooseImage(file)
   }
 
+  const handleCoordinateFile = async (file: File) => {
+    setCoordinateError('')
+    if (file.size > MAX_COORDINATE_BYTES) {
+      setCoordinateError('时间坐标文件不能超过 2 MB。')
+      return
+    }
+    const source = await file.text()
+    try {
+      const parsed = parseTimeCoordinates(source, file.name)
+      if (parsed.points.length === 0) {
+        setCoordinateError(parsed.errors[0] ?? '没有识别到有效坐标。请检查时间和文本格式。')
+        setCoordinatePoints([])
+        setCoordinateFileName('')
+        return
+      }
+      setCoordinatePoints(parsed.points)
+      setCoordinateFileName(file.name)
+      if (parsed.errors.length > 0) {
+        setCoordinateError(`已导入 ${parsed.points.length} 个坐标点，另有 ${parsed.errors.length} 行未识别。`)
+      }
+    } catch {
+      setCoordinateError('时间坐标文件格式无法解析，请使用 TXT、CSV 或 JSON。')
+      setCoordinatePoints([])
+      setCoordinateFileName('')
+    }
+  }
+
+  const handleCoordinateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) void handleCoordinateFile(file)
+    event.target.value = ''
+  }
+
+  const clearCoordinates = () => {
+    setCoordinatePoints([])
+    setCoordinateFileName('')
+    setCoordinateError('')
+  }
+
   const runRecognition = async () => {
     if (!image || busy) return
     setBusy(true)
@@ -99,6 +153,9 @@ export default function ScreenshotMode() {
     setProgress(null)
     setError('')
     setNotice('')
+    setCoordinatePoints([])
+    setCoordinateFileName('')
+    setCoordinateError('')
     setPreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current)
       return ''
@@ -118,7 +175,7 @@ export default function ScreenshotMode() {
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-cyan-300/80">单张图片 · 本地 OCR</p>
           <h2 className="mt-1 text-lg font-semibold text-slate-100">聊天截图分析</h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-            只识别当前选择的截图，不导入日期或坐标，也不调用外部 API。首次加载本地识别引擎和中文模型需要一点时间。
+            识别当前截图后，可用日期滚轮为图片标记日期，也可导入时间坐标生成当天情绪曲线；所有处理均在本地完成，不调用外部 API。
           </p>
         </div>
         {image && (
@@ -207,12 +264,64 @@ export default function ScreenshotMode() {
               </div>
             </div>
           )}
+          <div className="rounded-xl border border-white/10 bg-slate-950/25 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold text-slate-300">截图日期</h3>
+              <span className="rounded-md border border-cyan-300/15 bg-cyan-300/5 px-1.5 py-0.5 text-[10px] text-cyan-300">可选标记</span>
+            </div>
+            <DateWheelPicker value={selectedDate} onChange={setSelectedDate} />
+          </div>
           <p className="text-[10px] leading-relaxed text-slate-500">
-            图片仅在当前浏览器内存中处理，不会上传。OCR 会尽量读取可见文字；模糊、遮挡或界面元素可能导致误识别。
+            图片仅在当前浏览器内存中处理，不会上传。日期只作为当前截图的标记，不会自动写入 TXT 时间线。
           </p>
         </div>
 
         <div className="flex min-h-[400px] flex-col gap-3">
+          <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-200">导入时间坐标</h3>
+                <p className="mt-1 text-[11px] text-slate-500">按“时间 + 文本”生成当天的情绪坐标曲线</p>
+              </div>
+              {coordinatePoints.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearCoordinates}
+                  className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[11px] text-slate-300 transition-colors hover:bg-white/5"
+                >
+                  清除坐标
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => coordinateInputRef.current?.click()}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-300/25 bg-cyan-300/5 px-3 py-3 text-xs text-cyan-200 transition-colors hover:border-cyan-300/50 hover:bg-cyan-300/10"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+              </svg>
+              {coordinateFileName ? '重新选择坐标文件' : '选择时间坐标文件'}
+            </button>
+            <input
+              ref={coordinateInputRef}
+              type="file"
+              accept=".txt,.csv,.json,text/plain,text/csv,application/json"
+              className="hidden"
+              onChange={handleCoordinateChange}
+            />
+            {coordinateFileName && (
+              <p className="mt-2 truncate text-[11px] text-slate-400" title={coordinateFileName}>
+                已导入：<span className="text-slate-200">{coordinateFileName}</span> · {coordinatePoints.length} 个坐标点
+              </p>
+            )}
+            <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+              支持 TXT：<code className="text-slate-400">[08:30] 文本</code>；CSV：<code className="text-slate-400">time,text</code>；JSON：<code className="text-slate-400">[{`{`}"time":"08:30","text":"..."{`}`} ]</code>
+            </p>
+            {coordinateError && <p role="alert" className="mt-2 text-[10px] leading-relaxed text-amber-300">{coordinateError}</p>}
+          </section>
+          {coordinatePoints.length > 0 && <TimeCoordinateChart points={coordinatePoints} date={selectedDate} />}
+
           <AnimatePresence mode="wait">
             {result ? (
               <motion.div
