@@ -1,6 +1,12 @@
 * text=auto eol=lf
+# 由 .gitattributes 强制 CRLF，不能交给 Prettier 改成 LF
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+# Windows 专用脚本，与 .bat 同理走 CRLF。
+# ⚠️ serve.ps1 必须带 UTF-8 BOM：Windows PowerShell 5.1 在无 BOM 时按GBK 解码，
+# 中文注释会把语法搞坏（已踩过一次，表现为 ParserError 指向注释里的字符）。
+*.ps1 text eol=crlf
 *.png binary
 *.jpg binary
 *.jpeg binary
