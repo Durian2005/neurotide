@@ -141,7 +141,12 @@ export default function ScreenshotMode() {
       }
     } catch (cause) {
       console.error('Local screenshot OCR failed', cause)
-      setError('本地识别失败。请使用本地预览服务打开页面，并确认项目中的 OCR 资源完整。')
+      // ocr.ts 对 file:// 给出的是可执行提示，原样透出比笼统报错有用
+      const detail = cause instanceof Error ? cause.message : ''
+      setError(
+        detail ||
+          '本地识别失败。请使用本地预览服务打开页面，并确认项目中的 OCR 资源完整（ocr/lang 与 ocr/tesseract-core）。',
+      )
     } finally {
       setBusy(false)
     }
