@@ -1,1 +1,61 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+html {
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   焦点可见性
+   深色主题下浏览器的默认焦点环在部分平台几乎看不见，这里统一成青色描边。
+   已经有 focus-visible:ring 的组件会同时显示描边与光环，属于有意的冗余。
+--------------------------------------------------------------------------- */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   高对比模式
+   这些规则写在 @layer 之外，因此天然优先于 Tailwind 的 utilities 层，
+   不需要 !important，也不会和工具类互相打架。
+--------------------------------------------------------------------------- */
+[data-contrast='high'] .text-slate-600 {
+  color: #a8b5c7;
+}
+[data-contrast='high'] .text-slate-500 {
+  color: #cbd5e1;
+}
+[data-contrast='high'] .text-slate-400 {
+  color: #e2e8f0;
+}
+[data-contrast='high'] .text-slate-300 {
+  color: #f1f5f9;
+}
+[data-contrast='high'] .border-white\/10 {
+  border-color: rgb(255 255 255 / 0.28);
+}
+[data-contrast='high'] .border-white\/5 {
+  border-color: rgb(255 255 255 / 0.18);
+}
+[data-contrast='high'] .bg-slate-800\/40 {
+  background-color: rgb(30 41 59 / 0.8);
+}
+[data-contrast='high'] .bg-slate-900\/50,
+[data-contrast='high'] .bg-slate-950\/45 {
+  background-color: rgb(15 23 42 / 0.72);
+}
+
+/* ---------------------------------------------------------------------------
+   减少动效
+   framer-motion 由 App 的 MotionConfig reducedMotion="user" 处理，
+   这里兜住纯 CSS 的过渡与动画。
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
