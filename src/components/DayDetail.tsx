@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { MOOD_DOT_CLASS, MOOD_TEXT_CLASS, moodLabel, moodLevel } from '../utils/sentiment'
+import type { TextSpan } from '../utils/sentiment'
 import { formatFullDate, formatScore } from '../utils/format'
 import type { DailyMood } from '../utils/parser'
+import { batchProgressLabel, hasMoreMessages, initialVisibleCount, nextVisibleCount } from '../utils/messageBatch'
 
 interface DayDetailProps {
   day: DailyMood
@@ -18,24 +20,16 @@ interface Segment {
 
 const CHART_HEIGHT = 120
 
-// 找出命中情绪词的位置区间，用于原文高亮
-function buildSegments(content: string, positiveWords: string[], negativeWords: string[]): Segment[] {
-  const marks: Array<{ start: number; end: number; kind: SegmentKind }> = []
-
-  const collect = (words: string[], kind: SegmentKind) => {
-    for (const word of words) {
-      let from = 0
-      while (true) {
-        const index = content.indexOf(word, from)
-        if (index === -1) break
-        marks.push({ start: index, end: index + word.length, kind })
-        from = index + word.length
-      }
-    }
-  }
-  collect(positiveWords, 'positive')
-  collect(negativeWords, 'negative')
-  marks.sort((a, b) => a.start - b.start || b.end - a.end)
+// 用命中片段切分原文，命中区间已按极性分好（否定词会计入片段，如「不开心」整体标为消极）
+function buildSegments(content: string, spans: TextSpan[]): Segment[] {
+  const marks = spans
+    .map((span) => ({
+      start: Math.max(0, Math.min(span.start, content.length)),
+      end: Math.max(0, Math.min(span.end, content.length)),
+      kind: (span.polarity === 1 ? 'positive' : 'negative') as SegmentKind,
+    }))
+    .filter((mark) => mark.end > mark.start)
+    .toSorted((a, b) => a.start - b.start || a.end - b.end)
 
   const segments: Segment[] = []
   let cursor = 0
@@ -62,8 +56,12 @@ function MiniTrendChart({ day }: { day: DailyMood }) {
   const [width, setWidth] = useState(0)
 
   const values = useMemo(() => {
+    const runningValues: number[] = []
     let running = 0
-    const runningValues = day.messages.map((message) => (running += message.raw))
+    for (const message of day.messages) {
+      running += message.raw
+      runningValues.push(running)
+    }
     const maxAbs = Math.max(1, ...runningValues.map((value) => Math.abs(value)))
     return runningValues.map((value) => value / maxAbs)
   }, [day])
@@ -156,6 +154,59 @@ function MiniTrendChart({ day }: { day: DailyMood }) {
 
 export default function DayDetail({ day, onClose }: DayDetailProps) {
   const level = moodLevel(day.score)
+  const listRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  // 一天可能有上万条消息（实测 5 万条全量渲染会插入约 40 万节点、阻塞主线程 2.4 秒），
+  // 因此列表分批渲染。游标用「数据引用 + 条数」渲染期派生，换一天自动回到首批 ——
+  // 不能在 effect 里重置（oxlint react(set-state-in-effect) 会拦）。
+  const [batch, setBatch] = useState<{ day: DailyMood; visible: number } | null>(null)
+  const total = day.messages.length
+  const visible = batch?.day === day ? batch.visible : initialVisibleCount(total)
+  const more = hasMoreMessages(visible, total)
+
+  const showMore = useCallback(() => {
+    setBatch((previous) => {
+      const current = previous?.day === day ? previous.visible : initialVisibleCount(day.messages.length)
+      return { day, visible: nextVisibleCount(current, day.messages.length) }
+    })
+  }, [day])
+
+  // 只对已显示的条目做高亮分段，避免为看不见的消息白算
+  const rows = useMemo(
+    () =>
+      day.messages.slice(0, visible).map((message) => ({
+        message,
+        segments: buildSegments(message.content, message.spans),
+      })),
+    [day, visible],
+  )
+
+  // 滚到底部自动续载；判定框是滚动容器本身
+  useEffect(() => {
+    if (!more) return
+    const sentinel = sentinelRef.current
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) showMore()
+        }
+      },
+      { root: listRef.current, rootMargin: '240px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [more, showMore])
+
+  // Esc 关闭：面板是从键盘可达的，必须能用键盘退出
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   return (
     <motion.aside
@@ -163,7 +214,9 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 48 }}
       transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-      className="absolute inset-y-3 right-3 z-20 flex w-[360px] max-w-[80%] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur"
+      role="dialog"
+      aria-label={`${formatFullDate(day.day)} 当日详情`}
+      className="absolute right-3 bottom-3 left-3 z-20 flex max-h-[72%] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur sm:top-3 sm:right-3 sm:bottom-3 sm:left-auto sm:max-h-none sm:w-[360px] sm:max-w-[85%]"
     >
       <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
@@ -181,7 +234,14 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
           aria-label="关闭当日详情"
           className="rounded-lg border border-white/10 p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="h-4 w-4"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
         </button>
@@ -210,10 +270,10 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <p className="mb-2 text-[11px] text-slate-500">原始记录（命中词已高亮）</p>
         <ul className="space-y-2.5">
-          {day.messages.map((message, index) => (
+          {rows.map(({ message, segments }, index) => (
             <li key={`${message.timestamp}-${index}`} className="rounded-xl bg-slate-800/50 p-2.5">
               <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
                 <span className="text-slate-400">{message.nickname}</span>
@@ -223,17 +283,29 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
                 </span>
               </div>
               <p className="text-xs leading-relaxed">
-                {buildSegments(message.content, message.positiveWords, message.negativeWords).map(
-                  (segment, segmentIndex) => (
-                    <span key={segmentIndex} className={segmentClass(segment.kind)}>
-                      {segment.text}
-                    </span>
-                  ),
-                )}
+                {segments.map((segment, segmentIndex) => (
+                  <span key={segmentIndex} className={segmentClass(segment.kind)}>
+                    {segment.text}
+                  </span>
+                ))}
               </p>
             </li>
           ))}
         </ul>
+
+        {/* 长列表分批：滚到底自动续载，同时保留一个显式按钮（IntersectionObserver 不可用时也能用） */}
+        {more && (
+          <>
+            <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" />
+            <button
+              type="button"
+              onClick={showMore}
+              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-800/40 py-2 text-[11px] text-slate-300 transition-colors hover:bg-white/10"
+            >
+              {batchProgressLabel(visible, total)} · 继续显示
+            </button>
+          </>
+        )}
       </div>
     </motion.aside>
   )
