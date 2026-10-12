@@ -188,6 +188,34 @@ npm run build
 npm run preview
 ```
 
+`open-neurotide.bat` 不依赖 Node 或 npm：它调用 `scripts/serve.ps1` 起一个只监听 `127.0.0.1` 的本地静态服务器，关闭窗口即停止。
+
+## 打包分发
+
+```bash
+npm run package          # 用现有 dist/ 打包
+npm run package -- --build   # 先构建再打包
+npm run package -- --zip     # 额外产出 zip
+```
+
+产物在 `release/`（已加入 `.gitignore`，不进git 历史；对外分发建议走 GitHub Release 附件）：
+
+| 产物 | 体积 | 用途 |
+| --- | --- | --- |
+| `neurotide-lite.html` | 约 527 KB | 单文件，双击即用，**不含截图 OCR** |
+| `neurotide-full/` | 约 9.5 MB | 完整目录：`index.html` + `ocr/` + 启动器，解压即用 |
+
+`manifest.json` 记录了各产物的 sha256，便于分发后校验。
+
+**为什么拆成两半**：页面本身是单文件、可以 `file://` 直接打开，但截图 OCR 需要浏览器独立请求 `worker.min.js` / `tesseract-core-lstm.wasm` / `chi_sim.traineddata`（合计约 9 MB）。浏览器在 `file://` 下不会发这些请求，所以「零安装的单文件」和「可用的 OCR」天然互斥。
+
+因此：
+
+- 只想分析聊天记录 → 双击 `neurotide-lite.html`，不需要任何服务器；
+- 需要截图 OCR → 解压 `neurotide-full/` 后双击 `open-neurotide.bat`（本机无需安装 Node）。
+
+若用 `file://` 打开页面后仍去点截图识别，页面会明确提示需要通过本地 HTTP 服务运行，而不是在失败后悄悄尝试联网。
+
 ## 质量保障
 
 解析、情绪计分、编码探测等核心逻辑都集中在 `src/utils/` 的纯函数里，因此可以用单元测试完整覆盖。

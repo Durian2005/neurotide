@@ -17,3 +17,6 @@ test-chat.txt
 
 # Test coverage
 coverage/
+
+# 打包产物（含 9MB OCR 资源，不进 git 历史；对外分发走 GitHub Release）
+release/
