@@ -60,9 +60,15 @@ function splitCsvLine(line: string): string[] {
   return cells.map(stripOuterQuotes)
 }
 
-
-function parseJson(source: string): Array<{ time: unknown; text: unknown }> {
-  const parsed: unknown = JSON.parse(source)
+function parseJson(source: string, errors: string[]): Array<{ time: unknown; text: unknown }> {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(source)
+  } catch (error) {
+    // 扩展名声明为 .json 但内容不是合法 JSON 时，之前会直接抛异常中断整个导入
+    errors.push(`JSON 解析失败：${error instanceof Error ? error.message : String(error)}`)
+    return []
+  }
   const records = Array.isArray(parsed)
     ? parsed
     : parsed && typeof parsed === 'object' && Array.isArray((parsed as { points?: unknown }).points)
@@ -75,16 +81,26 @@ function parseJson(source: string): Array<{ time: unknown; text: unknown }> {
     if (typeof record === 'string') return [{ time: '', text: record }]
     if (!record || typeof record !== 'object') return []
     const item = record as Record<string, unknown>
-    return [{
-      time: item.time ?? item.timestamp ?? item.datetime ?? item.date,
-      text: item.text ?? item.content ?? item.message ?? item.value,
-    }]
+    return [
+      {
+        time: item.time ?? item.timestamp ?? item.datetime ?? item.date,
+        text: item.text ?? item.content ?? item.message ?? item.value,
+      },
+    ]
   })
 }
 
-function parseRecords(source: string, format: TimeCoordinateParseResult['format']): Array<{ time: unknown; text: unknown }> {
-  if (format === 'json') return parseJson(source)
-  const lines = source.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim()).filter(Boolean)
+function parseRecords(
+  source: string,
+  format: TimeCoordinateParseResult['format'],
+  errors: string[],
+): Array<{ time: unknown; text: unknown }> {
+  if (format === 'json') return parseJson(source, errors)
+  const lines = source
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
   if (format === 'csv') {
     const rows = lines.map(splitCsvLine)
     const header = rows[0]?.map((cell) => cell.toLowerCase()) ?? []
@@ -97,7 +113,9 @@ function parseRecords(source: string, format: TimeCoordinateParseResult['format'
     }))
   }
   return lines.map((line) => {
-    const matched = line.match(/^\[?((?:\d{4}[-/]\d{1,2}[-/]\d{1,2}[ T])?\d{1,2}:\d{2}(?::\d{2})?)\]?\s*(?:[,，;；\t|]\s*|\s+)(.+)$/)
+    const matched = line.match(
+      /^\[?((?:\d{4}[-/]\d{1,2}[-/]\d{1,2}[ T])?\d{1,2}:\d{2}(?::\d{2})?)\]?\s*(?:[,，;；\t|]\s*|\s+)(.+)$/,
+    )
     return matched ? { time: matched[1], text: matched[2] } : { time: '', text: '' }
   })
 }
@@ -106,13 +124,14 @@ export function parseTimeCoordinates(source: string, fileName = ''): TimeCoordin
   const trimmed = source.trim()
   const lowerName = fileName.toLowerCase()
   const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[{') || trimmed.startsWith('["')
-  const format: TimeCoordinateParseResult['format'] = lowerName.endsWith('.json') || looksLikeJson
-    ? 'json'
-    : lowerName.endsWith('.csv') || source.split(/\r?\n/)[0]?.includes(',')
-      ? 'csv'
-      : 'txt'
-  const records = parseRecords(trimmed, format)
+  const format: TimeCoordinateParseResult['format'] =
+    lowerName.endsWith('.json') || looksLikeJson
+      ? 'json'
+      : lowerName.endsWith('.csv') || source.split(/\r?\n/)[0]?.includes(',')
+        ? 'csv'
+        : 'txt'
   const errors: string[] = []
+  const records = parseRecords(trimmed, format, errors)
   const points: TimeCoordinate[] = []
 
   records.forEach((record, index) => {

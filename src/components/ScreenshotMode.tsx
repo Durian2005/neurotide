@@ -29,7 +29,7 @@ function wordFrequency(words: string[]): Array<{ word: string; count: number }> 
   for (const word of words) counter.set(word, (counter.get(word) ?? 0) + 1)
   return [...counter.entries()]
     .map(([word, count]) => ({ word, count }))
-    .sort((a, b) => b.count - a.count)
+    .toSorted((a, b) => b.count - a.count)
     .slice(0, 8)
 }
 
@@ -162,11 +162,8 @@ export default function ScreenshotMode() {
     })
   }
 
-  const statClass = result?.label === 'positive'
-    ? 'text-cyan-300'
-    : result?.label === 'negative'
-      ? 'text-blue-300'
-      : 'text-slate-200'
+  const statClass =
+    result?.label === 'positive' ? 'text-cyan-300' : result?.label === 'negative' ? 'text-blue-300' : 'text-slate-200'
 
   return (
     <section className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1">
@@ -175,7 +172,8 @@ export default function ScreenshotMode() {
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-cyan-300/80">单张图片 · 本地 OCR</p>
           <h2 className="mt-1 text-lg font-semibold text-slate-100">聊天截图分析</h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-            识别当前截图后，可用日期滚轮为图片标记日期，也可导入时间坐标生成当天情绪曲线；所有处理均在本地完成，不调用外部 API。
+            识别当前截图后，可用日期滚轮为图片标记日期，也可导入时间坐标生成当天情绪曲线；所有处理均在本地完成，不调用外部
+            API。
           </p>
         </div>
         {image && (
@@ -218,8 +216,19 @@ export default function ScreenshotMode() {
             ) : (
               <div className="px-6 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-300">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-6 w-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2.5M12 15V4m0 0L8 8m4-4 4 4M4 14v2.5M20 14v2.5" />
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    className="h-6 w-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 16.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2.5M12 15V4m0 0L8 8m4-4 4 4M4 14v2.5M20 14v2.5"
+                    />
                   </svg>
                 </div>
                 <p className="mt-4 text-sm font-medium text-slate-200">拖入截图，或点击选择</p>
@@ -237,7 +246,8 @@ export default function ScreenshotMode() {
           </div>
           {image && (
             <p className="truncate text-[11px] text-slate-500" title={image.name}>
-              当前图片：<span className="text-slate-300">{image.name}</span> · {(image.size / 1024 / 1024).toFixed(2)} MB
+              当前图片：<span className="text-slate-300">{image.name}</span> · {(image.size / 1024 / 1024).toFixed(2)}{' '}
+              MB
             </p>
           )}
           <button
@@ -246,7 +256,9 @@ export default function ScreenshotMode() {
             disabled={!image || busy}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 py-3 text-sm font-semibold text-slate-950 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
           >
-            {busy && <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/25 border-t-slate-900" />}
+            {busy && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/25 border-t-slate-900" />
+            )}
             {busy ? '正在本地识别…' : text ? '重新识别当前截图' : '识别并分析当前截图'}
           </button>
           {busy && progress && (
@@ -267,7 +279,9 @@ export default function ScreenshotMode() {
           <div className="rounded-xl border border-white/10 bg-slate-950/25 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
               <h3 className="text-xs font-semibold text-slate-300">截图日期</h3>
-              <span className="rounded-md border border-cyan-300/15 bg-cyan-300/5 px-1.5 py-0.5 text-[10px] text-cyan-300">可选标记</span>
+              <span className="rounded-md border border-cyan-300/15 bg-cyan-300/5 px-1.5 py-0.5 text-[10px] text-cyan-300">
+                可选标记
+              </span>
             </div>
             <DateWheelPicker value={selectedDate} onChange={setSelectedDate} />
           </div>
@@ -298,8 +312,19 @@ export default function ScreenshotMode() {
               onClick={() => coordinateInputRef.current?.click()}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-300/25 bg-cyan-300/5 px-3 py-3 text-xs text-cyan-200 transition-colors hover:border-cyan-300/50 hover:bg-cyan-300/10"
             >
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 16V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"
+                />
               </svg>
               {coordinateFileName ? '重新选择坐标文件' : '选择时间坐标文件'}
             </button>
@@ -312,13 +337,22 @@ export default function ScreenshotMode() {
             />
             {coordinateFileName && (
               <p className="mt-2 truncate text-[11px] text-slate-400" title={coordinateFileName}>
-                已导入：<span className="text-slate-200">{coordinateFileName}</span> · {coordinatePoints.length} 个坐标点
+                已导入：<span className="text-slate-200">{coordinateFileName}</span> · {coordinatePoints.length}{' '}
+                个坐标点
               </p>
             )}
             <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-              支持 TXT：<code className="text-slate-400">[08:30] 文本</code>；CSV：<code className="text-slate-400">time,text</code>；JSON：<code className="text-slate-400">[{`{`}"time":"08:30","text":"..."{`}`} ]</code>
+              支持 TXT：<code className="text-slate-400">[08:30] 文本</code>；CSV：
+              <code className="text-slate-400">time,text</code>；JSON：
+              <code className="text-slate-400">
+                [{`{`}"time":"08:30","text":"..."{`}`} ]
+              </code>
             </p>
-            {coordinateError && <p role="alert" className="mt-2 text-[10px] leading-relaxed text-amber-300">{coordinateError}</p>}
+            {coordinateError && (
+              <p role="alert" className="mt-2 text-[10px] leading-relaxed text-amber-300">
+                {coordinateError}
+              </p>
+            )}
           </section>
           {coordinatePoints.length > 0 && <TimeCoordinateChart points={coordinatePoints} date={selectedDate} />}
 
@@ -334,31 +368,57 @@ export default function ScreenshotMode() {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded-xl border border-white/10 bg-slate-800/50 p-3">
                     <p className="text-[10px] text-slate-500">截图文本长度</p>
-                    <p className="mt-1 text-base font-semibold tabular-nums text-slate-100">{result.text.length}<span className="ml-1 text-[10px] font-normal text-slate-500">字</span></p>
+                    <p className="mt-1 text-base font-semibold tabular-nums text-slate-100">
+                      {result.text.length}
+                      <span className="ml-1 text-[10px] font-normal text-slate-500">字</span>
+                    </p>
                   </div>
                   <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/5 p-3">
                     <p className="text-[10px] text-slate-500">积极词命中</p>
-                    <p className="mt-1 text-base font-semibold tabular-nums text-cyan-300">{result.positiveHitCount}<span className="ml-1 text-[10px] font-normal text-slate-500">次</span></p>
+                    <p className="mt-1 text-base font-semibold tabular-nums text-cyan-300">
+                      {result.positiveHitCount}
+                      <span className="ml-1 text-[10px] font-normal text-slate-500">次</span>
+                    </p>
                   </div>
                   <div className="rounded-xl border border-blue-300/15 bg-blue-300/5 p-3">
                     <p className="text-[10px] text-slate-500">消极词命中</p>
-                    <p className="mt-1 text-base font-semibold tabular-nums text-blue-300">{result.negativeHitCount}<span className="ml-1 text-[10px] font-normal text-slate-500">次</span></p>
+                    <p className="mt-1 text-base font-semibold tabular-nums text-blue-300">
+                      {result.negativeHitCount}
+                      <span className="ml-1 text-[10px] font-normal text-slate-500">次</span>
+                    </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="text-sm font-semibold text-slate-200">当前截图的词典情绪概览</h3>
-                    <span className={`text-xs font-semibold ${statClass}`}>{scoreLabel(result.label)} · {result.score >= 0 ? '+' : ''}{result.score.toFixed(2)}</span>
+                    <span className={`text-xs font-semibold ${statClass}`}>
+                      {scoreLabel(result.label)} · {result.score >= 0 ? '+' : ''}
+                      {result.score.toFixed(2)}
+                    </span>
                   </div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500">这是基于本地情绪词典的文本统计，不是对聊天对象或心理状态的诊断。</p>
-                  {(positiveWords.length > 0 || negativeWords.length > 0) ? (
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                    这是基于本地情绪词典的文本统计，不是对聊天对象或心理状态的诊断。
+                  </p>
+                  {positiveWords.length > 0 || negativeWords.length > 0 ? (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {positiveWords.map(({ word, count }) => (
-                        <span key={`p-${word}`} className="rounded-lg border border-cyan-300/15 bg-cyan-300/10 px-2 py-1 text-[11px] text-cyan-200">{word}{count > 1 ? ` ×${count}` : ''}</span>
+                        <span
+                          key={`p-${word}`}
+                          className="rounded-lg border border-cyan-300/15 bg-cyan-300/10 px-2 py-1 text-[11px] text-cyan-200"
+                        >
+                          {word}
+                          {count > 1 ? ` ×${count}` : ''}
+                        </span>
                       ))}
                       {negativeWords.map(({ word, count }) => (
-                        <span key={`n-${word}`} className="rounded-lg border border-blue-300/15 bg-blue-300/10 px-2 py-1 text-[11px] text-blue-200">{word}{count > 1 ? ` ×${count}` : ''}</span>
+                        <span
+                          key={`n-${word}`}
+                          className="rounded-lg border border-blue-300/15 bg-blue-300/10 px-2 py-1 text-[11px] text-blue-200"
+                        >
+                          {word}
+                          {count > 1 ? ` ×${count}` : ''}
+                        </span>
                       ))}
                     </div>
                   ) : (
@@ -389,12 +449,25 @@ export default function ScreenshotMode() {
                 className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-800/20 px-6 text-center"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-800/70 text-slate-500">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7V5a1 1 0 0 1 1-1h2m10 0h2a1 1 0 0 1 1 1v2M4 17v2a1 1 0 0 0 1 1h2m10 0h2a1 1 0 0 0 1-1v-2M7 9h10M7 12h7m-7 3h9" />
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    className="h-7 w-7"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 7V5a1 1 0 0 1 1-1h2m10 0h2a1 1 0 0 1 1 1v2M4 17v2a1 1 0 0 0 1 1h2m10 0h2a1 1 0 0 0 1-1v-2M7 9h10M7 12h7m-7 3h9"
+                    />
                   </svg>
                 </div>
                 <h3 className="mt-4 text-sm font-medium text-slate-300">识别结果会显示在这里</h3>
-                <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">选择一张聊天截图后点击“识别并分析当前截图”。此模式只处理该图片，不依赖已有 TXT 或日历数据。</p>
+                <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+                  选择一张聊天截图后点击“识别并分析当前截图”。此模式只处理该图片，不依赖已有 TXT 或日历数据。
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
