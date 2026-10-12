@@ -26,19 +26,13 @@ function inlineScriptForFileProtocol(): Plugin {
           if (file.type !== 'asset' || !file.fileName.endsWith('.html')) continue
 
           const scripts: string[] = []
-          const stripped = String(file.source).replace(
-            /<script\b[^>]*>[\s\S]*?<\/script>/g,
-            (tag) => {
-              scripts.push(tag.replace(/^<script\b[^>]*>/, '<script>"use strict";'))
-              return ''
-            },
-          )
+          const stripped = String(file.source).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, (tag) => {
+            scripts.push(tag.replace(/^<script\b[^>]*>/, '<script>"use strict";'))
+            return ''
+          })
 
           // 用函数形式替换：字符串形式的替换会把 bundle 里的 $& / $' 当成特殊模式解释
-          file.source = stripped.replace(
-            '</body>',
-            () => `${scripts.join('')}\n</body>`,
-          )
+          file.source = stripped.replace('</body>', () => `${scripts.join('')}\n</body>`)
         }
       },
     },

@@ -68,6 +68,12 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+// 逐日推进：构造新的 Date 而不是 setDate 原地修改，
+// 这样循环变量的变更体现在更新表达式里（也让静态检查能识别出步进）。
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
+}
+
 // 生成从 2025-12-01 到 2026-09-25 的示例聊天记录
 export function buildSampleChatLog(): string {
   const random = createRandom(20260926)
@@ -75,7 +81,7 @@ export function buildSampleChatLog(): string {
   const start = new Date(2025, 11, 1)
   const end = new Date(2026, 8, 25)
 
-  for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+  for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
     // 约 18% 的日子没有记录，形成自然空缺
     if (random() < 0.18) continue
 

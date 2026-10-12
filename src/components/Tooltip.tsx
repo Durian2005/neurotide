@@ -24,9 +24,7 @@ export default function Tooltip({ day, left, top }: TooltipProps) {
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-slate-200">{formatFullDate(day.day)}</span>
-        <span className={`text-xs font-semibold tabular-nums ${MOOD_TEXT_CLASS[level]}`}>
-          {formatScore(day.score)}
-        </span>
+        <span className={`text-xs font-semibold tabular-nums ${MOOD_TEXT_CLASS[level]}`}>{formatScore(day.score)}</span>
       </div>
 
       <div className="mt-2 flex items-center gap-1.5">

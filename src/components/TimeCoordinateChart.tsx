@@ -30,14 +30,18 @@ function formatDate(date: Date): string {
 
 export default function TimeCoordinateChart({ points, date }: TimeCoordinateChartProps) {
   if (points.length === 0) return null
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${xFor(point.minutes)} ${yFor(point.score)}`).join(' ')
+  const path = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${xFor(point.minutes)} ${yFor(point.score)}`)
+    .join(' ')
 
   return (
     <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-slate-200">时间坐标系</h3>
-          <p className="mt-1 text-[11px] text-slate-500">{formatDate(date)} · {points.length} 个坐标点 · 横轴为当天时间</p>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {formatDate(date)} · {points.length} 个坐标点 · 横轴为当天时间
+          </p>
         </div>
         <span className="text-[10px] text-slate-500">情绪分值 [-1, 1]</span>
       </div>
@@ -64,13 +68,25 @@ export default function TimeCoordinateChart({ points, date }: TimeCoordinateChar
               </text>
             </g>
           ))}
-          <line x1={PAD.left} x2={WIDTH - PAD.right} y1={HEIGHT - PAD.bottom} y2={HEIGHT - PAD.bottom} stroke="rgba(148,163,184,0.38)" />
+          <line
+            x1={PAD.left}
+            x2={WIDTH - PAD.right}
+            y1={HEIGHT - PAD.bottom}
+            y2={HEIGHT - PAD.bottom}
+            stroke="rgba(148,163,184,0.38)"
+          />
           {[0, 6, 12, 18, 24].map((hour) => {
             const x = PAD.left + (hour / 24) * (WIDTH - PAD.left - PAD.right)
             return (
               <g key={hour}>
                 <line x1={x} x2={x} y1={PAD.top} y2={HEIGHT - PAD.bottom} stroke="rgba(148,163,184,0.1)" />
-                <text x={x} y={HEIGHT - 14} textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'} fill="#64748b" fontSize="11">
+                <text
+                  x={x}
+                  y={HEIGHT - 14}
+                  textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'}
+                  fill="#64748b"
+                  fontSize="11"
+                >
                   {formatClock(hour * 60)}
                 </text>
               </g>
@@ -88,10 +104,14 @@ export default function TimeCoordinateChart({ points, date }: TimeCoordinateChar
               </g>
             )
           })}
-          <text x={WIDTH / 2} y={HEIGHT - 2} textAnchor="middle" fill="#475569" fontSize="10">时间坐标（当天 00:00–24:00）</text>
+          <text x={WIDTH / 2} y={HEIGHT - 2} textAnchor="middle" fill="#475569" fontSize="10">
+            时间坐标（当天 00:00–24:00）
+          </text>
         </svg>
       </div>
-      <p className="mt-2 text-[10px] leading-relaxed text-slate-500">将鼠标悬停在坐标点上可查看时间、分值和对应文本。坐标文本只在当前浏览器内处理。</p>
+      <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+        将鼠标悬停在坐标点上可查看时间、分值和对应文本。坐标文本只在当前浏览器内处理。
+      </p>
     </section>
   )
 }

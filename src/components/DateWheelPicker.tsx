@@ -89,7 +89,10 @@ export default function DateWheelPicker({ value, onChange, minYear = 2000, maxYe
   const year = value.getFullYear()
   const month = value.getMonth() + 1
   const day = value.getDate()
-  const years = useMemo(() => Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index), [maxYear, minYear])
+  const years = useMemo(
+    () => Array.from({ length: maxYear - minYear + 1 }, (_, index) => minYear + index),
+    [maxYear, minYear],
+  )
   const months = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 1), [])
   const days = useMemo(() => Array.from({ length: daysInMonth(year, month) }, (_, index) => index + 1), [month, year])
 

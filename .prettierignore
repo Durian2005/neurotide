@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+public/ocr/
+.workbuddy/
+*.traineddata
+*.wasm
+
+# 由 .gitattributes 强制 CRLF，不能交给 Prettier 改成 LF
+*.bat
+*.cmd
+
+# 逐字保留的文档
+README.md
+LICENSE
