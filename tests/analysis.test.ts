@@ -15,6 +15,7 @@ import {
   trendAt,
 } from '../src/utils/analysis'
 import { moodColor, moodRgb } from '../src/utils/moodColor'
+import { hexToRgb, PALETTE } from '../src/utils/palette'
 import type { AnalyzedMessage, DailyMood } from '../src/utils/parser'
 
 function day(date: string, score: number, messageCount = 1): DailyMood {
@@ -439,54 +440,57 @@ describe('buildInsightSummary', () => {
 const channelSum = (rgb: [number, number, number]): number => rgb[0] + rgb[1] + rgb[2]
 
 describe('moodColor', () => {
-  it('中性返回固定的中性灰', () => {
-    expect(moodRgb(0)).toEqual([51, 65, 85])
-    expect(moodColor(0)).toBe('rgb(51, 65, 85)')
+  const neutral = hexToRgb(PALETTE.moodNeutral)
+  const distance = (rgb: [number, number, number]) =>
+    Math.abs(rgb[0] - neutral[0]) + Math.abs(rgb[1] - neutral[1]) + Math.abs(rgb[2] - neutral[2])
+
+  it('中性返回固定的浅沙色', () => {
+    expect(moodRgb(0)).toEqual(neutral)
+    expect(moodColor(0)).toBe(`rgb(${neutral.join(', ')})`)
   })
 
   it('超出中性带的幅度越大，颜色越远离中性', () => {
-    const mild = moodRgb(0.2)
-    const strong = moodRgb(0.9)
-    expect(strong[1]).toBeGreaterThan(mild[1])
-    expect(strong[1]).toBeGreaterThan(65)
+    expect(distance(moodRgb(0.9))).toBeGreaterThan(distance(moodRgb(0.2)))
+    expect(distance(moodRgb(0.2))).toBeGreaterThan(0)
   })
 
-  it('消极一侧走蓝色通道', () => {
+  it('消极一侧偏冷：蓝通道高于绿、红', () => {
     const negative = moodRgb(-0.9)
     expect(negative[2]).toBeGreaterThan(negative[1])
-    expect(negative[0]).toBeLessThan(51)
+    expect(negative[2]).toBeGreaterThan(negative[0])
   })
 
-  it('中性带内为中性灰', () => {
-    expect(moodColor(0.1)).toBe('rgb(51, 65, 85)')
-    expect(moodColor(-0.1)).toBe('rgb(51, 65, 85)')
+  it('中性带内为中性色', () => {
+    expect(moodColor(0.1)).toBe(moodColor(0))
+    expect(moodColor(-0.1)).toBe(moodColor(0))
   })
 
   it('越过中性带立刻显色：这是有意的「交通灯」设计', () => {
     // moodLevel 用 >= / <= 判定，因此恰好等于 ±0.12 已算作积极/消极。
     // 颜色映射里的 k 有 0.42 的下限，所以一过界就有可见颜色，不存在「浅到看不见」的过渡带。
-    expect(moodRgb(0.12)[1]).toBeGreaterThan(65)
-    const negative = moodRgb(-0.12)
-    expect(negative[2]).toBeGreaterThan(negative[1])
+    expect(moodColor(0.12)).not.toBe(moodColor(0))
+    expect(moodColor(-0.12)).not.toBe(moodColor(0))
+    expect(distance(moodRgb(0.12))).toBeGreaterThan(20)
   })
 
-  it('高对比模式抬高亮度、压平幅度（幅度改由强度条承载）', () => {
-    expect(moodRgb(0, true)).toEqual([148, 163, 184])
-    expect(moodColor(0, true)).toBe('rgb(148, 163, 184)')
+  it('高对比模式在浅底上加深配色、压平幅度（幅度改由强度条承载）', () => {
+    const hcNeutral = hexToRgb(PALETTE.hcNeutral)
+    expect(moodRgb(0, true)).toEqual(hcNeutral)
+    expect(moodColor(0, true)).toBe(`rgb(${hcNeutral.join(', ')})`)
 
-    // 积极/消极两侧都明显亮于默认配色（三通道之和作为粗略亮度）
-    expect(channelSum(moodRgb(-0.9, true))).toBeGreaterThan(channelSum(moodRgb(-0.9)))
-    expect(channelSum(moodRgb(0.9, true))).toBeGreaterThan(channelSum(moodRgb(0.9)))
+    // 浅色主题里「更高对比」= 更暗；三通道之和作为粗略亮度
+    expect(channelSum(moodRgb(-0.9, true))).toBeLessThan(channelSum(moodRgb(-0.9)))
+    expect(channelSum(moodRgb(0.9, true))).toBeLessThan(channelSum(moodRgb(0.9)))
 
     // 混合下限 0.78 → 弱信号与强信号的颜色差距被压缩，必须配合强度条使用
     const weak = moodRgb(0.15, true)
     const strong = moodRgb(0.95, true)
     expect(Math.abs(strong[1] - weak[1])).toBeLessThan(Math.abs(moodRgb(0.95)[1] - moodRgb(0.15)[1]))
 
-    // 方向仍然分得开：积极是青系（红通道最低），消极是蓝系（蓝高于绿）
+    // 方向仍然分得开：积极是陶土色（红最高），消极是雾蓝（蓝最高）
     const positive = moodRgb(0.5, true)
-    expect(positive[0]).toBeLessThan(positive[1])
-    expect(positive[0]).toBeLessThan(positive[2])
+    expect(positive[0]).toBeGreaterThan(positive[1])
+    expect(positive[0]).toBeGreaterThan(positive[2])
     const negative = moodRgb(-0.5, true)
     expect(negative[2]).toBeGreaterThan(negative[1])
     expect(negative[2]).toBeGreaterThan(negative[0])

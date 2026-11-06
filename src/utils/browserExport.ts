@@ -7,18 +7,19 @@
 import { MOOD_HEX, NEUTRAL_BAND, moodLabel } from './sentiment'
 import { buildOverview, RANGE_LABEL } from './parser'
 import type { DailyMood, TimeRange } from './parser'
+import { PALETTE, rgba } from './palette'
 
 const REPORT_WIDTH = 1120
 const REPORT_PAD = 48
 const REPORT_SCALE = 2
-const BG = '#0f172a'
-const PANEL = '#172136'
-const TEXT_MAIN = '#f1f5f9'
-const TEXT_MUTED = '#94a3b8'
-const TEXT_DIM = '#64748b'
-const POSITIVE = '#67e8f9'
-const NEGATIVE = '#93c5fd'
-const NEUTRAL = '#cbd5e1'
+const BG = PALETTE.paper
+const PANEL = PALETTE.card
+const TEXT_MAIN = PALETTE.ink
+const TEXT_MUTED = PALETTE.inkSoft
+const TEXT_DIM = PALETTE.inkMuted
+const POSITIVE = PALETTE.clayInk
+const NEGATIVE = PALETTE.negativeInk
+const NEUTRAL = PALETTE.inkSoft
 const FONT_STACK = 'ui-sans-serif, system-ui, "Segoe UI", "Microsoft YaHei", sans-serif'
 
 /**
@@ -154,7 +155,7 @@ export function renderReportCanvas(input: ReportImageInput): HTMLCanvasElement {
   ctx.fillText(`${datasetName} · ${rangeText} · 导出时间 ${stamp}`, REPORT_PAD, cursorY)
 
   cursorY += 34
-  ctx.strokeStyle = 'rgba(148,163,184,0.22)'
+  ctx.strokeStyle = rgba(PALETTE.line, 0.35)
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(REPORT_PAD, cursorY + 0.5)

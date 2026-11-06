@@ -3,7 +3,8 @@ import type { KeyboardEvent, MouseEvent, RefObject } from 'react'
 import { motion, useAnimationControls } from 'framer-motion'
 import Tooltip from './Tooltip'
 import { MOOD_HEX, MOOD_HEX_HIGH_CONTRAST, moodGlyph } from '../utils/sentiment'
-import { moodColor } from '../utils/moodColor'
+import { moodColor, moodTextColor } from '../utils/moodColor'
+import { PALETTE, rgba } from '../utils/palette'
 import {
   BLOCK_GAP,
   CANVAS_BG,
@@ -199,7 +200,7 @@ export default function CalendarHeatmap({
       if (preferFull && fullWidth <= block.width + BLOCK_GAP - 4) label = full
       else if (shortWidth <= block.width + BLOCK_GAP - 4) label = block.short
       if (label) {
-        ctx.fillStyle = highContrast ? 'rgba(203,213,225,0.95)' : 'rgba(148,163,184,0.85)'
+        ctx.fillStyle = highContrast ? PALETTE.ink : PALETTE.inkMuted
         ctx.fillText(label, block.x, monthLabelY(block))
       }
     }
@@ -208,7 +209,7 @@ export default function CalendarHeatmap({
     ctx.font = '10px ui-sans-serif, system-ui, sans-serif'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
-    ctx.fillStyle = highContrast ? 'rgba(148,163,184,1)' : 'rgba(100,116,139,0.9)'
+    ctx.fillStyle = highContrast ? PALETTE.ink : PALETTE.inkMuted
     for (const rowTop of layout.blockRowTops) {
       for (const row of WEEKDAY_SHOWN) {
         const y = rowTop + row * (cellSize + GAP) + cellSize / 2
@@ -225,15 +226,22 @@ export default function CalendarHeatmap({
       }
       roundRectPath(ctx, cell.x, cell.y, cellSize, cellSize, radius)
       ctx.fill()
+      // 浅色主题里浅沙格子与画布几乎同色，补一圈细描边让「哪些天有记录」可辨。
+      // 描边色来自统一色板，对画布 >= 3.5:1。
+      ctx.strokeStyle = rgba(PALETTE.line, 0.6)
+      ctx.lineWidth = 0.75
+      ctx.stroke()
 
       if (decorate && cell.day) {
+        // 字形与强度条改用「按格子亮度自动挑选」的深墨 / 奶油白，保证小字 >= 4.5:1
+        const foreground = moodTextColor(cell.day.score, highContrast)
         const inset = Math.max(1, Math.round(cellSize * 0.16))
         const magnitude = Math.min(1, Math.abs(cell.day.score))
         if (showBar && magnitude > 0) {
           // 强度条：长度 = 超出中性带的绝对幅度，颜色之外的第二通道
           const barH = Math.max(1, Math.round(cellSize * 0.16))
           const barW = Math.max(1, Math.round((cellSize - inset * 2) * magnitude))
-          ctx.fillStyle = 'rgba(15,23,42,0.85)'
+          ctx.fillStyle = foreground
           roundRectPath(ctx, cell.x + inset, cell.y + cellSize - inset - barH, barW, barH, Math.max(1, barH / 2))
           ctx.fill()
         }
@@ -242,7 +250,7 @@ export default function CalendarHeatmap({
           ctx.font = `${Math.max(7, Math.round(cellSize * 0.46))}px ui-sans-serif, system-ui, sans-serif`
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
-          ctx.fillStyle = 'rgba(15,23,42,0.9)'
+          ctx.fillStyle = foreground
           ctx.fillText(moodGlyph(cell.day.score), cell.x + cellSize / 2, cell.y + cellSize / 2 - inset * 0.4)
           ctx.textAlign = 'left'
           ctx.textBaseline = 'bottom'
@@ -250,19 +258,23 @@ export default function CalendarHeatmap({
       }
 
       if (cell.key === selectedDate) {
-        ctx.strokeStyle = highContrast ? 'rgba(248,250,252,1)' : 'rgba(226,232,240,0.95)'
+        ctx.strokeStyle = PALETTE.clayDeep
         ctx.lineWidth = 1.5
         roundRectPath(ctx, cell.x + 0.75, cell.y + 0.75, cellSize - 1.5, cellSize - 1.5, radius)
         ctx.stroke()
       }
 
       if (cell.key === cursorKey) {
-        // 键盘游标：虚线框，与实线的「已选中」区分开
+        // 键盘游标：虚线框，与实线的「已选中」区分开。
+        // 先铺一圈奶油白底再画深墨虚线，浅色格与高对比深色格上都看得见。
         ctx.save()
-        ctx.setLineDash([3, 2])
-        ctx.strokeStyle = '#22d3ee'
-        ctx.lineWidth = 1.5
+        ctx.strokeStyle = PALETTE.cream
+        ctx.lineWidth = 3.5
         roundRectPath(ctx, cell.x + 1, cell.y + 1, cellSize - 2, cellSize - 2, radius)
+        ctx.stroke()
+        ctx.setLineDash([3, 2])
+        ctx.strokeStyle = PALETTE.ink
+        ctx.lineWidth = 1.5
         ctx.stroke()
         ctx.restore()
       }
@@ -333,11 +345,11 @@ export default function CalendarHeatmap({
     <div className="flex h-full w-full flex-col">
       <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold text-slate-200">情绪日历热力图</h2>
-          <span className="text-[11px] text-slate-500">{rangeLabel}</span>
+          <h2 className="text-sm font-semibold text-ink">情绪日历热力图</h2>
+          <span className="text-[11px] text-ink-muted">{rangeLabel}</span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="hidden text-[11px] text-slate-500 sm:inline">
+          <span className="hidden text-[11px] text-ink-muted sm:inline">
             X 轴=月 · Y 轴=星期 · Tab 聚焦后方向键移动、回车查看
           </span>
           <div className="flex items-center gap-2">
@@ -348,10 +360,10 @@ export default function CalendarHeatmap({
                 ['积极', legend.positive],
               ] as const
             ).map(([label, hex]) => (
-              <span key={label} className="flex items-center gap-1 text-[11px] text-slate-400">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: hex }} />
+              <span key={label} className="flex items-center gap-1 text-[11px] text-ink-muted">
+                <span className="h-2.5 w-2.5 rounded-sm ring-1 ring-line/70" style={{ backgroundColor: hex }} />
                 {colorSafe && (
-                  <span className="text-slate-500">{moodGlyph(label === '积极' ? 1 : label === '消极' ? -1 : 0)}</span>
+                  <span className="text-ink-muted">{moodGlyph(label === '积极' ? 1 : label === '消极' ? -1 : 0)}</span>
                 )}
                 {label}
               </span>
@@ -378,7 +390,7 @@ export default function CalendarHeatmap({
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
-          className="absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 focus-visible:ring-offset-0"
+          className="absolute inset-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-0"
         >
           {/* 无障碍镜像：与画布同一份布局数据，逐格给出日期、情绪值与记录数。
               role=none 让这一层在无障碍树里透明，grid 的直接子节点才是 row。 */}
@@ -414,8 +426,8 @@ export default function CalendarHeatmap({
 
         {!hasData && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1">
-            <p className="text-sm text-slate-500">尚未载入数据</p>
-            <p className="text-xs text-slate-600">在左侧上传聊天记录 TXT，或载入示例数据</p>
+            <p className="text-sm text-ink-muted">尚未载入数据</p>
+            <p className="text-xs text-ink-muted">在左侧上传聊天记录 TXT，或载入示例数据</p>
           </div>
         )}
       </motion.div>

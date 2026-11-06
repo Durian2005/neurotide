@@ -12,6 +12,7 @@ import {
   moodLabel,
   moodLevel,
 } from '../src/utils/sentiment'
+import { PALETTE, contrastRatio } from '../src/utils/palette'
 
 // ① 情绪词典引擎的回归测试。
 // 每条断言对应一个曾经真实存在的缺陷，改动 sentiment.ts 时这里必须保持全绿。
@@ -142,13 +143,6 @@ describe('分档与文案', () => {
   })
 })
 
-/** 粗略相对亮度（WCAG 系数），用于断言高对比配色确实抬高了亮度 */
-function luminance(hex: string): number {
-  const value = hex.replace('#', '')
-  const [r, g, b] = [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16) / 255)
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
 describe('色觉辅助（颜色之外的第二通道）', () => {
   it('方向字形与分档一致，中性用圆点而非箭头', () => {
     expect(moodGlyph(0.8)).toBe('▲')
@@ -158,9 +152,12 @@ describe('色觉辅助（颜色之外的第二通道）', () => {
     expect(moodGlyph(-0.8)).toBe('▼')
   })
 
-  it('高对比配色抬高了消极色的亮度（原色在深色底上几乎不可辨）', () => {
-    expect(luminance(MOOD_HEX_HIGH_CONTRAST.negative)).toBeGreaterThan(luminance(MOOD_HEX.negative) * 2)
-    expect(luminance(MOOD_HEX_HIGH_CONTRAST.neutral)).toBeGreaterThan(luminance(MOOD_HEX.neutral))
+  it('高对比配色提高三档色与米色画布的对比度（浅底上靠加深而非提亮）', () => {
+    for (const level of ['negative', 'neutral', 'positive'] as const) {
+      expect(contrastRatio(MOOD_HEX_HIGH_CONTRAST[level], PALETTE.canvas)).toBeGreaterThan(
+        contrastRatio(MOOD_HEX[level], PALETTE.canvas) * 2,
+      )
+    }
     // 三档在高对比下仍然互不相同
     const set = new Set([
       MOOD_HEX_HIGH_CONTRAST.negative,

@@ -4,6 +4,7 @@ import { NEUTRAL_BAND } from '../utils/sentiment'
 import { moodColor } from '../utils/moodColor'
 import { buildDenseSeries, linearTrend, rollingMean, trendAt, DEFAULT_ROLLING_WINDOW } from '../utils/analysis'
 import { formatScore } from '../utils/format'
+import { PALETTE, rgba } from '../utils/palette'
 import type { DailyMood } from '../utils/parser'
 
 interface TrendChartProps {
@@ -16,9 +17,20 @@ interface TrendChartProps {
 
 const HEIGHT = 240
 const PAD = { left: 46, right: 18, top: 16, bottom: 30 }
-const TREND_COLOR = '#fbbf24'
-const ROLLING_COLOR = '#22d3ee'
-const AXIS_COLOR = 'rgba(148,163,184,0.28)'
+const TREND_COLOR = PALETTE.clay
+const ROLLING_COLOR = PALETTE.negativeInk
+const AXIS_COLOR = rgba(PALETTE.line, 0.32)
+/**
+ * 趋势散点画在浅色卡片上，浅色格子色会看不见；这里改用语义深色。
+ * 幅度本来由纵轴位置承载，颜色只标极性，因此不损失信息。
+ */
+function dotColor(score: number, highContrast: boolean): string {
+  if (highContrast) return moodColor(score, true)
+  if (score >= NEUTRAL_BAND) return PALETTE.positiveInk
+  if (score <= -NEUTRAL_BAND) return PALETTE.negativeInk
+  return PALETTE.line
+}
+
 const GRID_LINES: Array<{ value: number; label: string }> = [
   { value: 1, label: '+1.0' },
   { value: 0.5, label: '+0.5' },
@@ -147,7 +159,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
             y={yAt(NEUTRAL_BAND)}
             width={plotW}
             height={Math.max(1, yAt(-NEUTRAL_BAND) - yAt(NEUTRAL_BAND))}
-            fill="rgba(148,163,184,0.07)"
+            fill={rgba(PALETTE.line, 0.1)}
           />
 
           {/* 积极 / 消极区底色：颜色之外的第二通道，色觉受限时也能看出点落在零线哪一侧 */}
@@ -156,19 +168,19 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
             y={PAD.top}
             width={plotW}
             height={Math.max(1, yAt(NEUTRAL_BAND) - PAD.top)}
-            fill="rgba(34,211,238,0.07)"
+            fill={rgba(PALETTE.moodPositive, 0.18)}
           />
           <rect
             x={PAD.left}
             y={yAt(-NEUTRAL_BAND)}
             width={plotW}
             height={Math.max(1, PAD.top + plotH - yAt(-NEUTRAL_BAND))}
-            fill="rgba(59,130,246,0.1)"
+            fill={rgba(PALETTE.moodNegative, 0.18)}
           />
-          <text x={PAD.left + 4} y={PAD.top + 10} fontSize={9} fill="rgba(34,211,238,0.6)">
+          <text x={PAD.left + 4} y={PAD.top + 10} fontSize={9} fill={PALETTE.clayInk}>
             积极区
           </text>
-          <text x={PAD.left + 4} y={PAD.top + plotH - 4} fontSize={9} fill="rgba(96,165,250,0.7)">
+          <text x={PAD.left + 4} y={PAD.top + plotH - 4} fontSize={9} fill={PALETTE.negativeInk}>
             消极区
           </text>
 
@@ -180,7 +192,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
                 x2={PAD.left + plotW}
                 y1={yAt(value)}
                 y2={yAt(value)}
-                stroke={value === 0 ? 'rgba(148,163,184,0.45)' : AXIS_COLOR}
+                stroke={value === 0 ? rgba(PALETTE.line, 0.65) : AXIS_COLOR}
                 strokeDasharray={value === 0 ? '4 4' : undefined}
               />
               <text
@@ -189,7 +201,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
                 textAnchor="end"
                 dominantBaseline="middle"
                 fontSize={10}
-                fill={highContrast ? '#cbd5e1' : '#64748b'}
+                fill={highContrast ? PALETTE.ink : PALETTE.inkMuted}
               >
                 {label}
               </text>
@@ -204,8 +216,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
                 cx={xAt(index)}
                 cy={yAt(point.score)}
                 r={count > 120 ? 1.6 : 2.6}
-                fill={moodColor(point.score, highContrast)}
-                opacity={0.85}
+                fill={dotColor(point.score, highContrast)}
               />
             ) : null,
           )}
@@ -245,7 +256,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
               y={HEIGHT - PAD.bottom + 14}
               textAnchor={tick.index === 0 ? 'start' : 'middle'}
               fontSize={10}
-              fill="#64748b"
+              fill={highContrast ? PALETTE.ink : PALETTE.inkMuted}
             >
               {tick.label}
             </text>
@@ -258,7 +269,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
               x2={xAt(hover)}
               y1={PAD.top}
               y2={PAD.top + plotH}
-              stroke="rgba(226,232,240,0.5)"
+              stroke={rgba(PALETTE.ink, 0.45)}
               strokeWidth={1}
             />
           )}
@@ -266,38 +277,38 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
       )}
 
       {width > 0 && !hasPoints && (
-        <p className="flex h-[240px] items-center justify-center text-xs text-slate-500">当前区间没有可绘制的记录</p>
+        <p className="flex h-[240px] items-center justify-center text-xs text-ink-muted">当前区间没有可绘制的记录</p>
       )}
 
       {hover !== null && series[hover] && typeof series[hover].score === 'number' && (
         <div
-          className="pointer-events-none absolute z-10 w-40 rounded-lg border border-white/10 bg-slate-900/95 px-2.5 py-2 text-[11px] shadow-xl backdrop-blur"
+          className="pointer-events-none absolute z-10 w-40 rounded-lg border border-line bg-card/95 px-2.5 py-2 text-[11px] shadow-xl backdrop-blur"
           style={{
             left: Math.max(4, Math.min(xAt(hover) + 12, width - 168)),
             top: 8,
           }}
         >
-          <p className="font-medium text-slate-200">{series[hover].date}</p>
-          <p className="mt-1 flex justify-between text-slate-400">
+          <p className="font-medium text-ink">{series[hover].date}</p>
+          <p className="mt-1 flex justify-between text-ink-muted">
             <span>当日情绪</span>
-            <span className="tabular-nums" style={{ color: moodColor(series[hover].score as number, highContrast) }}>
+            <span className="tabular-nums" style={{ color: dotColor(series[hover].score as number, highContrast) }}>
               {formatScore(series[hover].score as number)}
             </span>
           </p>
-          <p className="mt-0.5 flex justify-between text-slate-400">
+          <p className="mt-0.5 flex justify-between text-ink-muted">
             <span>{DEFAULT_ROLLING_WINDOW} 日均值</span>
-            <span className="tabular-nums text-cyan-300">
+            <span className="tabular-nums text-clay-ink">
               {typeof rolling[hover] === 'number' ? formatScore(rolling[hover] as number) : '—'}
             </span>
           </p>
-          <p className="mt-0.5 flex justify-between text-slate-500">
+          <p className="mt-0.5 flex justify-between text-ink-muted">
             <span>记录条数</span>
             <span className="tabular-nums">{series[hover].messageCount} 条</span>
           </p>
         </div>
       )}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-muted">
         <span className="flex items-center gap-1.5">
           <span className="flex -space-x-0.5">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: moodColor(-0.6, highContrast) }} />
@@ -314,7 +325,7 @@ export default function TrendChart({ days, onSelect, highContrast = false }: Tre
           <span className="h-0.5 w-4 rounded" style={{ backgroundColor: TREND_COLOR }} />
           线性趋势
         </span>
-        <span className="ml-auto text-slate-500">日为点、不连线，避免抖动盖住趋势；均线在无记录处断开</span>
+        <span className="ml-auto text-ink-muted">日为点、不连线，避免抖动盖住趋势；均线在无记录处断开</span>
       </div>
     </div>
   )

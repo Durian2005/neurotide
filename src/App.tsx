@@ -23,6 +23,7 @@ import { StorageError, buildDatasetMeta, createDatasetId } from './utils/dataset
 import type { DatasetMeta, DatasetStore } from './utils/datasetStore'
 import { buildBackupJson, buildDailyCsv, parseBackupJson, safeFileName } from './utils/exportReport'
 import { downloadCanvasPng, downloadText, renderReportCanvas } from './utils/browserExport'
+import { PALETTE } from './utils/palette'
 
 function describeStorageError(error: unknown): string {
   if (error instanceof StorageError) return error.message
@@ -423,55 +424,55 @@ export default function App() {
   const sidebarContent = (
     <>
       <header className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-700">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-clay to-clay-deep">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
-            stroke="#0f172a"
+            stroke={PALETTE.cream}
             className="h-5 w-5"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h3l2.5-6 3 12 2.5-8 1.5 4h5.5" />
           </svg>
         </div>
         <div className="min-w-0">
-          <h1 className="truncate text-base font-bold leading-tight text-slate-100">NeuroTide</h1>
-          <p className="truncate text-[11px] text-slate-500">个人数据情绪地图 · 纯本地分析</p>
+          <h1 className="truncate text-base font-bold leading-tight text-ink">NeuroTide</h1>
+          <p className="truncate text-[11px] text-ink-muted">个人数据情绪地图 · 纯本地分析</p>
         </div>
       </header>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-3">
-        <h2 className="mb-2 px-1 text-xs font-semibold tracking-wider text-slate-400">分析模式</h2>
+      <section className="rounded-2xl border border-line bg-card p-3">
+        <h2 className="mb-2 px-1 text-xs font-semibold tracking-wider text-ink-muted">分析模式</h2>
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="选择分析模式">
           <button
             type="button"
             aria-pressed={mode === 'timeline'}
             onClick={() => setMode('timeline')}
-            className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${mode === 'timeline' ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-200' : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+            className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${mode === 'timeline' ? 'border-clay bg-clay-wash text-clay-ink' : 'border-line text-ink-muted hover:bg-clay-wash hover:text-ink'}`}
           >
             <span className="block text-xs font-semibold">聊天记录 TXT</span>
-            <span className="mt-1 block text-[10px] opacity-70">按日期生成情绪日历</span>
+            <span className="mt-1 block text-[10px]">按日期生成情绪日历</span>
           </button>
           <button
             type="button"
             aria-pressed={mode === 'screenshot'}
             onClick={() => setMode('screenshot')}
-            className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${mode === 'screenshot' ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-200' : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
+            className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${mode === 'screenshot' ? 'border-clay bg-clay-wash text-clay-ink' : 'border-line text-ink-muted hover:bg-clay-wash hover:text-ink'}`}
           >
             <span className="block text-xs font-semibold">聊天截图</span>
-            <span className="mt-1 block text-[10px] opacity-70">单图 OCR 与情绪分析</span>
+            <span className="mt-1 block text-[10px]">单图 OCR 与情绪分析</span>
           </button>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-3">
-        <h2 className="mb-2 px-1 text-xs font-semibold tracking-wider text-slate-400">无障碍</h2>
+      <section className="rounded-2xl border border-line bg-card p-3">
+        <h2 className="mb-2 px-1 text-xs font-semibold tracking-wider text-ink-muted">无障碍</h2>
         <div className="space-y-2">
-          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-slate-900/50 px-2.5 py-2">
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-sunken px-2.5 py-2">
             <span className="min-w-0">
-              <span className="block text-[11px] font-medium text-slate-300">色觉辅助</span>
-              <span className="block text-[10px] leading-snug text-slate-500">
+              <span className="block text-[11px] font-medium text-ink-soft">色觉辅助</span>
+              <span className="block text-[10px] leading-snug text-ink-muted">
                 热力图加方向字形与强度条，不再只靠颜色区分
               </span>
             </span>
@@ -480,20 +481,20 @@ export default function App() {
               role="switch"
               checked={colorSafe}
               onChange={(event) => void handleToggleColorSafe(event.target.checked)}
-              className="h-4 w-4 shrink-0 accent-cyan-400"
+              className="h-4 w-4 shrink-0 accent-clay"
             />
           </label>
-          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-slate-900/50 px-2.5 py-2">
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-sunken px-2.5 py-2">
             <span className="min-w-0">
-              <span className="block text-[11px] font-medium text-slate-300">高对比</span>
-              <span className="block text-[10px] leading-snug text-slate-500">提升文字与图表的对比度</span>
+              <span className="block text-[11px] font-medium text-ink-soft">高对比</span>
+              <span className="block text-[10px] leading-snug text-ink-muted">提升文字与图表的对比度</span>
             </span>
             <input
               type="checkbox"
               role="switch"
               checked={highContrast}
               onChange={(event) => void handleToggleHighContrast(event.target.checked)}
-              className="h-4 w-4 shrink-0 accent-cyan-400"
+              className="h-4 w-4 shrink-0 accent-clay"
             />
           </label>
         </div>
@@ -511,8 +512,8 @@ export default function App() {
             progress={parseProgress}
           />
 
-          <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
-            <h2 className="mb-3 text-xs font-semibold tracking-wider text-slate-400">时间筛选</h2>
+          <section className="rounded-2xl border border-line bg-card p-4">
+            <h2 className="mb-3 text-xs font-semibold tracking-wider text-ink-muted">时间筛选</h2>
             <div className="grid grid-cols-3 gap-2">
               {RANGES.map((item) => {
                 const active = item === range
@@ -524,8 +525,8 @@ export default function App() {
                     disabled={!data}
                     className={`rounded-lg border py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                       active
-                        ? 'border-cyan-400/40 bg-cyan-400/15 text-cyan-300'
-                        : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                        ? 'border-clay bg-clay-wash text-clay-ink'
+                        : 'border-line text-ink-muted hover:bg-clay-wash hover:text-ink'
                     }`}
                   >
                     {RANGE_LABEL[item]}
@@ -535,8 +536,8 @@ export default function App() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
-            <h2 className="mb-3 text-xs font-semibold tracking-wider text-slate-400">数据概览</h2>
+          <section className="rounded-2xl border border-line bg-card p-4">
+            <h2 className="mb-3 text-xs font-semibold tracking-wider text-ink-muted">数据概览</h2>
             {hasData ? (
               <motion.dl
                 key={range}
@@ -546,63 +547,63 @@ export default function App() {
                 className="space-y-2.5"
               >
                 <div className="flex items-center justify-between text-xs">
-                  <dt className="text-slate-400">总天数</dt>
-                  <dd className="font-semibold tabular-nums text-slate-100">{overview.totalDays} 天</dd>
+                  <dt className="text-ink-muted">总天数</dt>
+                  <dd className="font-semibold tabular-nums text-ink">{overview.totalDays} 天</dd>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <dt className="text-slate-400">记录条数</dt>
-                  <dd className="font-semibold tabular-nums text-slate-100">{overview.messageCount} 条</dd>
+                  <dt className="text-ink-muted">记录条数</dt>
+                  <dd className="font-semibold tabular-nums text-ink">{overview.messageCount} 条</dd>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <dt className="text-slate-400">平均情绪值</dt>
+                  <dt className="text-ink-muted">平均情绪值</dt>
                   <dd className={`font-semibold tabular-nums ${MOOD_TEXT_CLASS[moodLevel(overview.averageScore)]}`}>
                     {formatScore(overview.averageScore)}
-                    <span className="ml-1 font-normal text-slate-500">{moodLabel(overview.averageScore)}</span>
+                    <span className="ml-1 font-normal text-ink-muted">{moodLabel(overview.averageScore)}</span>
                   </dd>
                 </div>
-                <div className="border-t border-white/5 pt-2.5">
+                <div className="border-t border-line-soft pt-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <dt className="text-slate-400">最积极的一天</dt>
+                    <dt className="text-ink-muted">最积极的一天</dt>
                     <dd className="text-right">
                       {overview.bestDay ? (
                         <>
-                          <span className="text-slate-200">{formatFullDate(overview.bestDay.day)}</span>
-                          <span className="ml-1 tabular-nums text-cyan-300">{formatScore(overview.bestDay.score)}</span>
+                          <span className="text-ink">{formatFullDate(overview.bestDay.day)}</span>
+                          <span className="ml-1 tabular-nums text-clay-ink">{formatScore(overview.bestDay.score)}</span>
                         </>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-ink-muted">—</span>
                       )}
                     </dd>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs">
-                    <dt className="text-slate-400">最消极的一天</dt>
+                    <dt className="text-ink-muted">最消极的一天</dt>
                     <dd className="text-right">
                       {overview.worstDay ? (
                         <>
-                          <span className="text-slate-200">{formatFullDate(overview.worstDay.day)}</span>
-                          <span className="ml-1 tabular-nums text-blue-300">
+                          <span className="text-ink">{formatFullDate(overview.worstDay.day)}</span>
+                          <span className="ml-1 tabular-nums text-negative-ink">
                             {formatScore(overview.worstDay.score)}
                           </span>
                         </>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-ink-muted">—</span>
                       )}
                     </dd>
                   </div>
                 </div>
               </motion.dl>
             ) : (
-              <p className="text-xs text-slate-500">载入数据后展示统计结果</p>
+              <p className="text-xs text-ink-muted">载入数据后展示统计结果</p>
             )}
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
-            <h2 className="mb-3 text-xs font-semibold tracking-wider text-slate-400">导出</h2>
+          <section className="rounded-2xl border border-line bg-card p-4">
+            <h2 className="mb-3 text-xs font-semibold tracking-wider text-ink-muted">导出</h2>
             <button
               type="button"
               onClick={handleExportReport}
               disabled={!hasData}
-              className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 py-2.5 text-sm font-semibold text-slate-900 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
+              className="w-full rounded-xl bg-gradient-to-r from-clay to-clay-deep py-2.5 text-sm font-semibold text-cream transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
             >
               导出完整报告 PNG
             </button>
@@ -611,7 +612,7 @@ export default function App() {
                 type="button"
                 onClick={handleExportView}
                 disabled={!hasData}
-                className="rounded-lg border border-white/10 py-2 text-[11px] font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-line py-2 text-[11px] font-medium text-ink-muted transition-colors hover:bg-clay-wash hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 热力图 PNG
               </button>
@@ -619,7 +620,7 @@ export default function App() {
                 type="button"
                 onClick={handleExportCsv}
                 disabled={!hasData}
-                className="rounded-lg border border-white/10 py-2 text-[11px] font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-line py-2 text-[11px] font-medium text-ink-muted transition-colors hover:bg-clay-wash hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 日粒度 CSV
               </button>
@@ -627,12 +628,12 @@ export default function App() {
                 type="button"
                 onClick={handleExportBackup}
                 disabled={!hasData}
-                className="rounded-lg border border-white/10 py-2 text-[11px] font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-line py-2 text-[11px] font-medium text-ink-muted transition-colors hover:bg-clay-wash hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
               >
                 JSON 备份
               </button>
             </div>
-            <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+            <p className="mt-2 text-[10px] leading-relaxed text-ink-muted">
               报告图为重新绘制，含标题与概览；CSV 为当前筛选范围的日粒度数据；JSON 备份内嵌原始文本，可重新导入。
             </p>
           </section>
@@ -651,7 +652,7 @@ export default function App() {
             onClearAll={handleClearAll}
           />
 
-          <div className="mt-auto space-y-1.5 pt-2 text-[11px] leading-relaxed text-slate-500">
+          <div className="mt-auto space-y-1.5 pt-2 text-[11px] leading-relaxed text-ink-muted">
             <p>
               本地词典：积极 {DICTIONARY_SIZE.positive} 词 / 消极 {DICTIONARY_SIZE.negative} 词，每个词条带强度权重，
               并识别「不 / 没」等否定词与「非常 / 有点」等程度副词。
@@ -662,7 +663,7 @@ export default function App() {
         </>
       )}
       {mode === 'screenshot' && (
-        <div className="mt-auto pt-2 text-[10px] leading-relaxed text-slate-600">
+        <div className="mt-auto pt-2 text-[10px] leading-relaxed text-ink-muted">
           截图 OCR 完全在本地执行，不调用外部 API；词典情绪结果仅供参考。
         </div>
       )}
@@ -672,11 +673,11 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <div
-        className="flex h-screen overflow-hidden bg-slate-900 text-slate-200"
+        className="flex h-screen overflow-hidden bg-paper text-ink"
         data-contrast={highContrast ? 'high' : undefined}
       >
         {/* 宽屏常驻侧栏 */}
-        <aside className="hidden h-full w-[30%] max-w-[460px] min-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-white/10 bg-slate-900 p-4 lg:flex">
+        <aside className="hidden h-full w-[30%] max-w-[460px] min-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-line bg-sidebar p-4 lg:flex">
           {sidebarContent}
         </aside>
 
@@ -689,7 +690,7 @@ export default function App() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.16 }}
-                className="absolute inset-0 bg-slate-950/70"
+                className="absolute inset-0 bg-ink/45"
                 onClick={() => setPanelOpen(false)}
                 aria-hidden="true"
               />
@@ -699,12 +700,12 @@ export default function App() {
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', stiffness: 360, damping: 36 }}
                 aria-label="控制面板"
-                className="absolute inset-y-0 left-0 flex w-[88%] max-w-[420px] flex-col gap-4 overflow-y-auto border-r border-white/10 bg-slate-900 p-4 shadow-2xl"
+                className="absolute inset-y-0 left-0 flex w-[88%] max-w-[420px] flex-col gap-4 overflow-y-auto border-r border-line bg-card p-4 shadow-2xl"
               >
                 <button
                   type="button"
                   onClick={() => setPanelOpen(false)}
-                  className="self-end rounded-lg border border-white/10 px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:bg-white/10"
+                  className="self-end rounded-lg border border-line px-2.5 py-1 text-[11px] text-ink-soft transition-colors hover:bg-clay-wash"
                 >
                   收起面板
                 </button>
@@ -723,7 +724,7 @@ export default function App() {
               type="button"
               onClick={() => setPanelOpen(true)}
               aria-expanded={panelOpen}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-white/5"
+              className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs text-ink-soft transition-colors hover:bg-clay-wash"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -738,7 +739,7 @@ export default function App() {
               </svg>
               控制面板
             </button>
-            <span className="truncate text-xs text-slate-500">
+            <span className="truncate text-xs text-ink-muted">
               {mode === 'timeline' ? (fileName ?? '未载入数据') : '聊天截图分析'}
             </span>
           </div>
@@ -757,12 +758,12 @@ export default function App() {
                       onClick={() => setView(item.key)}
                       className={`rounded-lg border px-3 py-1.5 text-left transition-colors ${
                         active
-                          ? 'border-cyan-400/40 bg-cyan-400/15 text-cyan-200'
-                          : 'border-white/10 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                          ? 'border-clay bg-clay-wash text-clay-ink'
+                          : 'border-line text-ink-muted hover:bg-clay-wash hover:text-ink'
                       }`}
                     >
                       <span className="block text-xs font-medium">{item.label}</span>
-                      <span className="mt-0.5 block text-[10px] opacity-70">{item.hint}</span>
+                      <span className="mt-0.5 block text-[10px]">{item.hint}</span>
                     </button>
                   )
                 })}

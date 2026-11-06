@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { HOUR_BAND_LABELS, MIN_CELL_SAMPLES, WEEKDAY_LABELS, buildWeekdayHourMatrix } from '../utils/analysis'
-import { moodColor } from '../utils/moodColor'
+import { moodColor, moodTextColor } from '../utils/moodColor'
 import { moodGlyph } from '../utils/sentiment'
 import { formatScore } from '../utils/format'
+import { PALETTE } from '../utils/palette'
 import type { AnalyzedMessage } from '../utils/parser'
 
 interface WeekdayHourHeatmapProps {
@@ -11,13 +12,13 @@ interface WeekdayHourHeatmapProps {
   highContrast?: boolean
 }
 
-const EMPTY_CELL = '#16203a'
+const EMPTY_CELL = PALETTE.noData
 
 export default function WeekdayHourHeatmap({ messages, highContrast = false }: WeekdayHourHeatmapProps) {
   const matrix = useMemo(() => buildWeekdayHourMatrix(messages), [messages])
 
   if (matrix.totalCount === 0) {
-    return <p className="py-6 text-center text-xs text-slate-500">当前区间没有可统计的记录</p>
+    return <p className="py-6 text-center text-xs text-ink-muted">当前区间没有可统计的记录</p>
   }
 
   const describe = (weekday: number, band: number): string => {
@@ -34,7 +35,7 @@ export default function WeekdayHourHeatmap({ messages, highContrast = false }: W
           <tr>
             <th scope="col" className="w-10" />
             {HOUR_BAND_LABELS.map((label) => (
-              <th key={label} scope="col" className="pb-1 text-[10px] font-normal text-slate-500">
+              <th key={label} scope="col" className="pb-1 text-[10px] font-normal text-ink-muted">
                 {label}
               </th>
             ))}
@@ -43,7 +44,7 @@ export default function WeekdayHourHeatmap({ messages, highContrast = false }: W
         <tbody>
           {WEEKDAY_LABELS.map((weekdayLabel, weekday) => (
             <tr key={weekdayLabel}>
-              <th scope="row" className="pr-1 text-right text-[10px] font-normal text-slate-500">
+              <th scope="row" className="pr-1 text-right text-[10px] font-normal text-ink-muted">
                 {weekdayLabel}
               </th>
               {HOUR_BAND_LABELS.map((hourLabel, band) => {
@@ -55,15 +56,19 @@ export default function WeekdayHourHeatmap({ messages, highContrast = false }: W
                     <div
                       title={describe(weekday, band)}
                       className={`flex aspect-square w-full flex-col items-center justify-center rounded text-[10px] leading-none tabular-nums transition-transform hover:scale-[1.06] ${
-                        cell ? 'text-slate-100/90' : 'text-transparent'
-                      } ${isBest ? 'ring-1 ring-cyan-300/70' : ''} ${isWorst ? 'ring-1 ring-blue-400/70' : ''}`}
-                      style={{ backgroundColor: cell ? moodColor(cell.score, highContrast) : EMPTY_CELL }}
+                        cell ? '' : 'text-transparent'
+                      } ${isBest ? 'ring-1 ring-clay' : ''} ${isWorst ? 'ring-1 ring-negative-ink' : ''}`}
+                      style={{
+                        backgroundColor: cell ? moodColor(cell.score, highContrast) : EMPTY_CELL,
+                        // 格子亮度随分值变化，前景自动在深墨 / 奶油白之间切换，保证 10px 数字可读
+                        color: cell ? moodTextColor(cell.score, highContrast) : undefined,
+                      }}
                     >
                       {cell ? (
                         <>
                           <span>{cell.count}</span>
                           {/* 方向字形：颜色之外的第二通道 */}
-                          <span aria-hidden="true" className="mt-0.5 text-[8px] opacity-80">
+                          <span aria-hidden="true" className="mt-0.5 text-[8px]">
                             {moodGlyph(cell.score)}
                           </span>
                         </>
@@ -79,7 +84,7 @@ export default function WeekdayHourHeatmap({ messages, highContrast = false }: W
         </tbody>
       </table>
 
-      <div className="mt-3 space-y-1 text-[10px] leading-relaxed text-slate-500">
+      <div className="mt-3 space-y-1 text-[10px] leading-relaxed text-ink-muted">
         <p className="flex flex-wrap items-center gap-2">
           <span className="flex items-center gap-1">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: moodColor(-0.6, highContrast) }} />
@@ -96,13 +101,13 @@ export default function WeekdayHourHeatmap({ messages, highContrast = false }: W
           <span className="ml-auto">色 = 平均情绪值 · 数字 = 条数 · 字形 = 方向</span>
         </p>
         {matrix.best && (
-          <p className="text-cyan-300/80">
+          <p className="text-clay-ink">
             最好时段：{WEEKDAY_LABELS[matrix.best.weekday]} {HOUR_BAND_LABELS[matrix.best.band]} 点（
             {formatScore(matrix.best.cell.score)}，{matrix.best.cell.count} 条）
           </p>
         )}
         {matrix.worst && (
-          <p className="text-blue-300/80">
+          <p className="text-negative-ink">
             最差时段：{WEEKDAY_LABELS[matrix.worst.weekday]} {HOUR_BAND_LABELS[matrix.worst.band]} 点（
             {formatScore(matrix.worst.cell.score)}，{matrix.worst.cell.count} 条）
           </p>

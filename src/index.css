@@ -1,16 +1,60 @@
 @import 'tailwindcss';
 
+/* ---------------------------------------------------------------------------
+   暖米色主题 token
+   色值以 src/utils/palette.ts 的 PALETTE 为准（Canvas / SVG / 报告 PNG 也读它）。
+   tests/palette.test.ts 会解析本段并逐项核对，两处不一致会直接测试失败。
+--------------------------------------------------------------------------- */
+@theme {
+  --color-paper: #f6efe3;
+  --color-sidebar: #efe4d3;
+  --color-card: #fffcf6;
+  --color-sunken: #efe3d1;
+  --color-canvas: #fbf6ec;
+  --color-cream: #fff9ef;
+
+  --color-ink: #33291f;
+  --color-ink-soft: #554536;
+  --color-ink-muted: #6e5c49;
+
+  --color-line: #8a7353;
+  --color-line-soft: #cdb99b;
+
+  --color-clay: #9e4a2b;
+  --color-clay-deep: #7c341b;
+  --color-clay-ink: #8c3f23;
+  --color-clay-wash: #f5e0d1;
+
+  --color-warn: #8a5a10;
+  --color-warn-wash: #faebcd;
+  --color-danger: #a02e26;
+  --color-danger-wash: #fbe3dc;
+
+  --color-mood-neutral: #e2d4be;
+  --color-mood-positive: #d18a62;
+  --color-mood-negative: #7fa8b5;
+  --color-positive-ink: #9c3f1e;
+  --color-negative-ink: #2e5a6b;
+  --color-negative-wash: #e2edf0;
+  --color-no-data: #e9dcc6;
+}
+
 html {
-  color-scheme: dark;
+  color-scheme: light;
+  background-color: var(--color-paper);
+}
+
+body {
+  background-color: var(--color-paper);
 }
 
 /* ---------------------------------------------------------------------------
    焦点可见性
-   深色主题下浏览器的默认焦点环在部分平台几乎看不见，这里统一成青色描边。
-   已经有 focus-visible:ring 的组件会同时显示描边与光环，属于有意的冗余。
+   统一用陶土色描边；outline-offset 让描边落在浅色页面底上，因此对米色底
+   始终保持 > 6:1 的对比度，不会在深色按钮上消失。
 --------------------------------------------------------------------------- */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid #22d3ee;
+  outline: 2px solid var(--color-clay-ink);
   outline-offset: 2px;
 }
 
@@ -18,31 +62,22 @@ html {
    高对比模式
    这些规则写在 @layer 之外，因此天然优先于 Tailwind 的 utilities 层，
    不需要 !important，也不会和工具类互相打架。
+   浅色主题下「提高对比」= 把文字与描边**加深**，与色觉辅助（只加形状）保持正交。
 --------------------------------------------------------------------------- */
-[data-contrast='high'] .text-slate-600 {
-  color: #a8b5c7;
+[data-contrast='high'] .text-ink-muted {
+  color: var(--color-ink);
 }
-[data-contrast='high'] .text-slate-500 {
-  color: #cbd5e1;
+[data-contrast='high'] .text-ink-soft {
+  color: var(--color-ink);
 }
-[data-contrast='high'] .text-slate-400 {
-  color: #e2e8f0;
+[data-contrast='high'] .border-line-soft {
+  border-color: var(--color-line);
 }
-[data-contrast='high'] .text-slate-300 {
-  color: #f1f5f9;
+[data-contrast='high'] .border-line {
+  border-color: var(--color-clay-deep);
 }
-[data-contrast='high'] .border-white\/10 {
-  border-color: rgb(255 255 255 / 0.28);
-}
-[data-contrast='high'] .border-white\/5 {
-  border-color: rgb(255 255 255 / 0.18);
-}
-[data-contrast='high'] .bg-slate-800\/40 {
-  background-color: rgb(30 41 59 / 0.8);
-}
-[data-contrast='high'] .bg-slate-900\/50,
-[data-contrast='high'] .bg-slate-950\/45 {
-  background-color: rgb(15 23 42 / 0.72);
+[data-contrast='high'] .bg-sunken {
+  background-color: var(--color-no-data);
 }
 
 /* ---------------------------------------------------------------------------

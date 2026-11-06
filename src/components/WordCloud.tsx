@@ -14,7 +14,7 @@ export default function WordCloud({ messages, limit = 40 }: WordCloudProps) {
   const words = useMemo(() => buildWordCloud(messages, limit), [messages, limit])
 
   if (words.length === 0) {
-    return <p className="py-6 text-center text-xs text-slate-500">当前区间没有命中任何情绪词</p>
+    return <p className="py-6 text-center text-xs text-ink-muted">当前区间没有命中任何情绪词</p>
   }
 
   const counts = words.map((item) => item.count)
@@ -40,8 +40,8 @@ export default function WordCloud({ messages, limit = 40 }: WordCloudProps) {
             <span
               key={item.word}
               title={`${item.word} · 出现 ${item.count} 次`}
-              className={`cursor-default leading-tight transition-opacity hover:opacity-80 ${
-                item.positive ? 'text-cyan-300' : 'text-blue-300'
+              className={`cursor-default leading-tight hover:underline ${
+                item.positive ? 'text-clay-ink' : 'text-negative-ink'
               }`}
               style={{ fontSize: `${size.toFixed(1)}px`, fontWeight: strong ? 600 : 400 }}
             >
@@ -51,9 +51,9 @@ export default function WordCloud({ messages, limit = 40 }: WordCloudProps) {
         })}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/5 pt-2 text-[10px] text-slate-500">
-        <span className="text-cyan-300/80">积极命中 {positiveTotal} 次</span>
-        <span className="text-blue-300/80">消极命中 {negativeTotal} 次</span>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-soft pt-2 text-[10px] text-ink-muted">
+        <span className="text-clay-ink">积极命中 {positiveTotal} 次</span>
+        <span className="text-negative-ink">消极命中 {negativeTotal} 次</span>
         <span className="ml-auto">字号 = 出现频次（平方根压缩） · 颜色 = 极性</span>
       </div>
     </div>

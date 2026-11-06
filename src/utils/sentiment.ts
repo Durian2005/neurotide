@@ -9,6 +9,8 @@
 // 归一化口径：单条文本先压缩到 [-1, 1]（messageScore），
 // 多条目聚合时取平均（aggregateScore），因此日期、截图、时间坐标三个模式共用同一把尺子。
 
+import { PALETTE } from './palette'
+
 export interface TextSpan {
   /** 原文起始下标 */
   start: number
@@ -469,33 +471,33 @@ export function moodLabel(score: number): string {
   return '中性'
 }
 
-// 三档配色（heatmap 与 UI 共用同一套色值）
+// 三档配色（heatmap 与 UI 共用同一套色值，色值来自统一色板）
 export const MOOD_HEX: Record<MoodLevel, string> = {
-  negative: '#1e3a8a',
-  neutral: '#334155',
-  positive: '#22d3ee',
+  negative: PALETTE.moodNegative,
+  neutral: PALETTE.moodNeutral,
+  positive: PALETTE.moodPositive,
 }
 
 export const MOOD_TEXT_CLASS: Record<MoodLevel, string> = {
-  positive: 'text-cyan-300',
-  neutral: 'text-slate-300',
-  negative: 'text-blue-300',
+  positive: 'text-clay-ink',
+  neutral: 'text-ink-soft',
+  negative: 'text-negative-ink',
 }
 
 export const MOOD_DOT_CLASS: Record<MoodLevel, string> = {
-  positive: 'bg-cyan-400',
-  neutral: 'bg-slate-500',
-  negative: 'bg-blue-800',
+  positive: 'bg-clay',
+  neutral: 'bg-line',
+  negative: 'bg-mood-negative',
 }
 
 /**
- * 高对比配色（深蓝 #1e3a8a 在 #0f172a 背景上对比度仅约 1.6:1，接近「看不见」）。
- * 保留「蓝=消极 / 青=积极」的语义，只把亮度抬到可辨识区间。
+ * 高对比配色：浅米色画布上改为**加深**三档色（旧深色主题是提亮）。
+ * 保留「雾蓝=消极 / 陶土橙=积极」的语义，只把与画布的对比度抬到 6:1 以上。
  */
 export const MOOD_HEX_HIGH_CONTRAST: Record<MoodLevel, string> = {
-  negative: '#60a5fa',
-  neutral: '#94a3b8',
-  positive: '#67e8f9',
+  negative: PALETTE.hcNegative,
+  neutral: PALETTE.hcNeutral,
+  positive: PALETTE.hcPositive,
 }
 
 /**

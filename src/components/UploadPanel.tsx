@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, KeyboardEvent } from 'react'
 import { motion } from 'framer-motion'
 import { readTextFile } from '../utils/textEncoding'
+import { PALETTE } from '../utils/palette'
 import type { ParseReport } from '../utils/parser'
 
 /** 超过该大小给出耗时提醒 */
@@ -92,8 +93,8 @@ export default function UploadPanel({
   )
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-slate-800/40 p-4">
-      <h2 className="mb-3 text-xs font-semibold tracking-wider text-slate-400">数据导入</h2>
+    <section className="rounded-2xl border border-line bg-card p-4">
+      <h2 className="mb-3 text-xs font-semibold tracking-wider text-ink-muted">数据导入</h2>
 
       <motion.div
         role="button"
@@ -109,11 +110,11 @@ export default function UploadPanel({
         onDrop={handleDrop}
         animate={{
           scale: dragging ? 1.02 : 1,
-          borderColor: dragging ? 'rgba(34,211,238,0.8)' : 'rgba(148,163,184,0.25)',
-          backgroundColor: dragging ? 'rgba(34,211,238,0.08)' : 'rgba(15,23,42,0.5)',
+          borderColor: dragging ? PALETTE.clay : PALETTE.line,
+          backgroundColor: dragging ? PALETTE.clayWash : PALETTE.sunken,
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-        className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 py-6 text-center outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+        className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 py-6 text-center outline-none focus-visible:ring-2 focus-visible:ring-clay"
       >
         <motion.svg
           xmlns="http://www.w3.org/2000/svg"
@@ -121,8 +122,8 @@ export default function UploadPanel({
           viewBox="0 0 24 24"
           strokeWidth={1.6}
           stroke="currentColor"
-          className="h-7 w-7 text-cyan-300"
-          animate={{ y: dragging ? -4 : 0, color: dragging ? '#22d3ee' : '#67e8f9' }}
+          className="h-7 w-7 text-clay-ink"
+          animate={{ y: dragging ? -4 : 0, color: dragging ? PALETTE.clay : PALETTE.clayInk }}
           transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         >
           <path
@@ -132,7 +133,7 @@ export default function UploadPanel({
           />
         </motion.svg>
 
-        <p className="mt-2 text-sm font-medium text-slate-200">
+        <p className="mt-2 text-sm font-medium text-ink">
           {reading
             ? progress === null
               ? '正在解析…'
@@ -141,7 +142,7 @@ export default function UploadPanel({
               ? '松开即可导入'
               : '拖拽 TXT 到此处'}
         </p>
-        <p className="mt-1 text-xs text-slate-500">或点击选择文件</p>
+        <p className="mt-1 text-xs text-ink-muted">或点击选择文件</p>
 
         {reading && progress !== null && (
           <div
@@ -150,10 +151,10 @@ export default function UploadPanel({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={percent}
-            className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-slate-700/60"
+            className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-line-soft"
           >
             <div
-              className="h-full rounded-full bg-cyan-400 transition-[width] duration-150"
+              className="h-full rounded-full bg-clay transition-[width] duration-150"
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -171,43 +172,43 @@ export default function UploadPanel({
       <button
         type="button"
         onClick={onLoadSample}
-        className="mt-3 w-full rounded-lg border border-cyan-400/25 bg-cyan-400/10 py-2 text-xs font-medium text-cyan-300 transition-colors hover:bg-cyan-400/20"
+        className="mt-3 w-full rounded-lg border border-clay bg-clay-wash py-2 text-xs font-medium text-clay-ink transition-colors hover:bg-clay-wash"
       >
         载入示例数据体验
       </button>
 
-      <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-        支持 <span className="text-slate-400">[时间] 昵称: 内容</span>、
-        <span className="text-slate-400">时间 昵称: 内容</span>， 以及「时间行 + 换行内容」；自动识别 UTF-8 / UTF-16 /
-        GBK 编码。也可直接导入本应用导出的 <span className="text-slate-400">JSON 备份</span> 还原数据。
+      <p className="mt-3 text-[11px] leading-relaxed text-ink-muted">
+        支持 <span className="text-ink-muted">[时间] 昵称: 内容</span>、
+        <span className="text-ink-muted">时间 昵称: 内容</span>， 以及「时间行 + 换行内容」；自动识别 UTF-8 / UTF-16 /
+        GBK 编码。也可直接导入本应用导出的 <span className="text-ink-muted">JSON 备份</span> 还原数据。
       </p>
 
       {fileName && (
-        <p className="mt-2 truncate rounded-lg bg-slate-900/60 px-2.5 py-1.5 text-[11px] text-slate-400">
-          已加载：<span className="text-slate-300">{fileName}</span>
+        <p className="mt-2 truncate rounded-lg bg-sunken px-2.5 py-1.5 text-[11px] text-ink-muted">
+          已加载：<span className="text-ink-soft">{fileName}</span>
         </p>
       )}
 
       {report && report.matchedLines > 0 && (
-        <dl className="mt-2 space-y-1 rounded-lg border border-white/10 bg-slate-900/50 px-2.5 py-2 text-[11px]">
+        <dl className="mt-2 space-y-1 rounded-lg border border-line bg-sunken px-2.5 py-2 text-[11px]">
           <div className="flex items-center justify-between gap-2">
-            <dt className="text-slate-500">识别格式</dt>
-            <dd className="truncate text-slate-300">{report.formatLabel}</dd>
+            <dt className="text-ink-muted">识别格式</dt>
+            <dd className="truncate text-ink-soft">{report.formatLabel}</dd>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <dt className="text-slate-500">文本编码</dt>
-            <dd className="text-slate-300">{encoding || '—'}</dd>
+            <dt className="text-ink-muted">文本编码</dt>
+            <dd className="text-ink-soft">{encoding || '—'}</dd>
           </div>
           <div className="flex items-center justify-between gap-2">
-            <dt className="text-slate-500">记录 / 续行</dt>
-            <dd className="tabular-nums text-slate-300">
+            <dt className="text-ink-muted">记录 / 续行</dt>
+            <dd className="tabular-nums text-ink-soft">
               {report.matchedLines} 条 / {report.continuationLines} 行
             </dd>
           </div>
           {report.skippedLines > 0 && (
             <div className="flex items-center justify-between gap-2">
-              <dt className="text-slate-500">分隔行已跳过</dt>
-              <dd className="tabular-nums text-slate-400">{report.skippedLines} 行</dd>
+              <dt className="text-ink-muted">分隔行已跳过</dt>
+              <dd className="tabular-nums text-ink-muted">{report.skippedLines} 行</dd>
             </div>
           )}
         </dl>
@@ -216,7 +217,7 @@ export default function UploadPanel({
       {(report?.invalidDateLines ?? 0) > 0 && (
         <p
           role="alert"
-          className="mt-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-200"
+          className="mt-2 rounded-lg border border-warn bg-warn-wash px-2.5 py-1.5 text-[11px] leading-relaxed text-warn"
         >
           有 {report?.invalidDateLines} 行日期不合法（例如 2 月 30 日），已跳过且不会计入统计。
         </p>
@@ -225,11 +226,11 @@ export default function UploadPanel({
       {(report?.unmatchedLines ?? 0) > 0 && (
         <div
           role="status"
-          className="mt-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-200"
+          className="mt-2 rounded-lg border border-warn bg-warn-wash px-2.5 py-1.5 text-[11px] leading-relaxed text-warn"
         >
           <p>有 {report?.unmatchedLines} 行未能识别为记录，未计入统计。</p>
           {report && report.samples.length > 0 && (
-            <ul className="mt-1 space-y-0.5 text-amber-200/70">
+            <ul className="mt-1 space-y-0.5 text-warn">
               {report.samples.map((sample) => (
                 <li key={sample} className="truncate" title={sample}>
                   · {sample}
@@ -243,7 +244,7 @@ export default function UploadPanel({
       {notice && (
         <p
           role="status"
-          className="mt-2 rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-1.5 text-[11px] leading-relaxed text-cyan-200"
+          className="mt-2 rounded-lg border border-clay bg-clay-wash px-2.5 py-1.5 text-[11px] leading-relaxed text-clay-ink"
         >
           {notice}
         </p>
@@ -253,7 +254,7 @@ export default function UploadPanel({
         <motion.p
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-2 rounded-lg border border-red-400/25 bg-red-500/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-red-300"
+          className="mt-2 rounded-lg border border-danger bg-danger-wash px-2.5 py-1.5 text-[11px] leading-relaxed text-danger"
         >
           {error}
         </motion.p>

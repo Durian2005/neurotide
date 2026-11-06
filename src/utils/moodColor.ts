@@ -1,22 +1,25 @@
 // 情绪值 → 颜色。
 //
-// 口径与词典一致：深蓝=消极、灰=中性、亮青=积极（alpha 之外同一套 RGB 混合规则）。
+// 暖米色主题下：陶土橙=积极、浅沙=中性、雾蓝=消极（alpha 之外同一套 RGB 混合规则）。
 // 日历热力图、星期×时段热力图、报告图共用本模块，避免各处各写一份导致颜色漂移。
+// 色值统一来自 palette.ts；tests/palette.test.ts 会按 WCAG 校验格子与前景文字的对比度。
 //
-// `highContrast` 为色觉辅助 / 高对比模式：中性基色抬到 slate-400，消极色抬到 blue-400，
-// 并把混合下限从 0.42 提到 0.78 —— 原本 #1e3a8a 在 #0f172a 上对比度约 1.6:1，几乎不可辨。
+// `highContrast` 为高对比模式：浅底上改为**加深**配色（旧深色主题是提亮），
+// 并把混合下限从 0.42 提到 0.78 —— 颜色因此不再承载幅度，须配合强度条使用。
 
 import { NEUTRAL_BAND, moodLevel } from './sentiment'
+import { PALETTE, cellTextColor, hexToRgb } from './palette'
+import type { Rgb } from './palette'
 
-export type Rgb = [number, number, number]
+export type { Rgb }
 
-const NEUTRAL_RGB: Rgb = [51, 65, 85]
-const POSITIVE_RGB: Rgb = [34, 211, 238]
-const NEGATIVE_RGB: Rgb = [30, 58, 138]
+const NEUTRAL_RGB: Rgb = hexToRgb(PALETTE.moodNeutral)
+const POSITIVE_RGB: Rgb = hexToRgb(PALETTE.moodPositive)
+const NEGATIVE_RGB: Rgb = hexToRgb(PALETTE.moodNegative)
 
-const NEUTRAL_RGB_HC: Rgb = [148, 163, 184]
-const POSITIVE_RGB_HC: Rgb = [103, 232, 249]
-const NEGATIVE_RGB_HC: Rgb = [96, 165, 250]
+const NEUTRAL_RGB_HC: Rgb = hexToRgb(PALETTE.hcNeutral)
+const POSITIVE_RGB_HC: Rgb = hexToRgb(PALETTE.hcPositive)
+const NEGATIVE_RGB_HC: Rgb = hexToRgb(PALETTE.hcNegative)
 
 const MIX_FLOOR = 0.42
 const MIX_FLOOR_HC = 0.78
@@ -55,4 +58,9 @@ export function moodRgb(score: number, highContrast = false): Rgb {
 export function moodColor(score: number, highContrast = false): string {
   const [r, g, b] = moodRgb(score, highContrast)
   return `rgb(${r}, ${g}, ${b})`
+}
+
+/** 情绪格子上的文字 / 字形颜色：自动在深墨与奶油白之间挑对比度更高的一侧 */
+export function moodTextColor(score: number, highContrast = false): string {
+  return cellTextColor(moodRgb(score, highContrast))
 }

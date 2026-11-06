@@ -5,6 +5,7 @@ import type { TextSpan } from '../utils/sentiment'
 import { formatFullDate, formatScore } from '../utils/format'
 import type { DailyMood } from '../utils/parser'
 import { batchProgressLabel, hasMoreMessages, initialVisibleCount, nextVisibleCount } from '../utils/messageBatch'
+import { PALETTE, rgba } from '../utils/palette'
 
 interface DayDetailProps {
   day: DailyMood
@@ -44,9 +45,9 @@ function buildSegments(content: string, spans: TextSpan[]): Segment[] {
 }
 
 function segmentClass(kind: SegmentKind): string {
-  if (kind === 'positive') return 'rounded bg-cyan-400/20 px-0.5 text-cyan-200'
-  if (kind === 'negative') return 'rounded bg-blue-500/25 px-0.5 text-blue-200'
-  return 'text-slate-300'
+  if (kind === 'positive') return 'rounded bg-clay-wash px-0.5 text-clay-ink'
+  if (kind === 'negative') return 'rounded bg-negative-wash px-0.5 text-negative-ink'
+  return 'text-ink-soft'
 }
 
 // 当日情绪折线微缩图（原生 Canvas）
@@ -98,7 +99,7 @@ function MiniTrendChart({ day }: { day: DailyMood }) {
     const toY = (value: number) => padY + ((1 - value) / 2) * innerH
 
     // 零线
-    ctx.strokeStyle = 'rgba(148,163,184,0.35)'
+    ctx.strokeStyle = rgba(PALETTE.line, 0.55)
     ctx.setLineDash([4, 4])
     ctx.beginPath()
     ctx.moveTo(padX, toY(0))
@@ -118,14 +119,14 @@ function MiniTrendChart({ day }: { day: DailyMood }) {
     ctx.lineTo(toX(values.length - 1), toY(0))
     ctx.lineTo(toX(0), toY(0))
     ctx.closePath()
-    ctx.fillStyle = 'rgba(34,211,238,0.12)'
+    ctx.fillStyle = rgba(PALETTE.moodPositive, 0.2)
     ctx.fill()
 
     // 折线
     ctx.beginPath()
     ctx.moveTo(toX(0), toY(values[0]))
     for (let i = 1; i < values.length; i++) ctx.lineTo(toX(i), toY(values[i]))
-    ctx.strokeStyle = '#22d3ee'
+    ctx.strokeStyle = PALETTE.clayInk
     ctx.lineWidth = 2
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
@@ -135,7 +136,7 @@ function MiniTrendChart({ day }: { day: DailyMood }) {
     for (let i = 0; i < values.length; i++) {
       ctx.beginPath()
       ctx.arc(toX(i), toY(values[i]), values.length > 40 ? 1.6 : 3, 0, Math.PI * 2)
-      ctx.fillStyle = values[i] > 0 ? '#22d3ee' : values[i] < 0 ? '#3b82f6' : '#94a3b8'
+      ctx.fillStyle = values[i] > 0 ? PALETTE.positiveInk : values[i] < 0 ? PALETTE.negativeInk : PALETTE.inkMuted
       ctx.fill()
     }
   }, [values, width])
@@ -144,7 +145,7 @@ function MiniTrendChart({ day }: { day: DailyMood }) {
     <div ref={wrapRef} className="relative h-[120px] w-full">
       <canvas ref={canvasRef} className="block h-full w-full" />
       {day.messages.length === 1 && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-0 text-center text-[10px] text-slate-500">
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 text-center text-[10px] text-ink-muted">
           当日仅 1 条记录
         </p>
       )}
@@ -216,23 +217,23 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
       transition={{ type: 'spring', stiffness: 320, damping: 32 }}
       role="dialog"
       aria-label={`${formatFullDate(day.day)} 当日详情`}
-      className="absolute right-3 bottom-3 left-3 z-20 flex max-h-[72%] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur sm:top-3 sm:right-3 sm:bottom-3 sm:left-auto sm:max-h-none sm:w-[360px] sm:max-w-[85%]"
+      className="absolute right-3 bottom-3 left-3 z-20 flex max-h-[72%] flex-col overflow-hidden rounded-2xl border border-line bg-card/95 shadow-2xl backdrop-blur sm:top-3 sm:right-3 sm:bottom-3 sm:left-auto sm:max-h-none sm:w-[360px] sm:max-w-[85%]"
     >
-      <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+      <header className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-100">{formatFullDate(day.day)}</h3>
+          <h3 className="text-sm font-semibold text-ink">{formatFullDate(day.day)}</h3>
           <p className="mt-0.5 flex items-center gap-1.5 text-xs">
             <span className={`h-2 w-2 rounded-full ${MOOD_DOT_CLASS[level]}`} />
             <span className={MOOD_TEXT_CLASS[level]}>{moodLabel(day.score)}</span>
-            <span className="tabular-nums text-slate-400">{formatScore(day.score)}</span>
-            <span className="text-slate-500">· {day.messageCount} 条</span>
+            <span className="tabular-nums text-ink-muted">{formatScore(day.score)}</span>
+            <span className="text-ink-muted">· {day.messageCount} 条</span>
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="关闭当日详情"
-          className="rounded-lg border border-white/10 p-1 text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200"
+          className="rounded-lg border border-line p-1 text-ink-muted transition-colors hover:bg-clay-wash hover:text-ink"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -247,20 +248,20 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
         </button>
       </header>
 
-      <div className="shrink-0 border-b border-white/10 px-4 py-3">
-        <p className="mb-1 text-[11px] text-slate-500">当日情绪折线</p>
+      <div className="shrink-0 border-b border-line px-4 py-3">
+        <p className="mb-1 text-[11px] text-ink-muted">当日情绪折线</p>
         <MiniTrendChart day={day} />
       </div>
 
       {day.topWords.length > 0 && (
-        <div className="shrink-0 border-b border-white/10 px-4 py-2.5">
-          <p className="mb-1.5 text-[11px] text-slate-500">主导情绪词</p>
+        <div className="shrink-0 border-b border-line px-4 py-2.5">
+          <p className="mb-1.5 text-[11px] text-ink-muted">主导情绪词</p>
           <div className="flex flex-wrap gap-1.5">
             {day.topWords.map((item) => (
               <span
                 key={item.word}
                 className={`rounded px-1.5 py-0.5 text-[11px] ${
-                  item.positive ? 'bg-cyan-400/15 text-cyan-300' : 'bg-blue-500/20 text-blue-300'
+                  item.positive ? 'bg-clay-wash text-clay-ink' : 'bg-negative-wash text-negative-ink'
                 }`}
               >
                 {item.word} ×{item.count}
@@ -271,12 +272,12 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
       )}
 
       <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-        <p className="mb-2 text-[11px] text-slate-500">原始记录（命中词已高亮）</p>
+        <p className="mb-2 text-[11px] text-ink-muted">原始记录（命中词已高亮）</p>
         <ul className="space-y-2.5">
           {rows.map(({ message, segments }, index) => (
-            <li key={`${message.timestamp}-${index}`} className="rounded-xl bg-slate-800/50 p-2.5">
-              <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
-                <span className="text-slate-400">{message.nickname}</span>
+            <li key={`${message.timestamp}-${index}`} className="rounded-xl bg-sunken p-2.5">
+              <div className="mb-1 flex items-center justify-between text-[11px] text-ink-muted">
+                <span className="text-ink-muted">{message.nickname}</span>
                 <span className="tabular-nums">
                   {String(message.date.getHours()).padStart(2, '0')}:
                   {String(message.date.getMinutes()).padStart(2, '0')}
@@ -300,7 +301,7 @@ export default function DayDetail({ day, onClose }: DayDetailProps) {
             <button
               type="button"
               onClick={showMore}
-              className="mt-3 w-full rounded-lg border border-white/10 bg-slate-800/40 py-2 text-[11px] text-slate-300 transition-colors hover:bg-white/10"
+              className="mt-3 w-full rounded-lg border border-line bg-card py-2 text-[11px] text-ink-soft transition-colors hover:bg-clay-wash"
             >
               {batchProgressLabel(visible, total)} · 继续显示
             </button>

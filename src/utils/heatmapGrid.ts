@@ -12,6 +12,7 @@ import { toDateKey } from './parser'
 import type { DailyMood } from './parser'
 import { formatShortDate, formatScore } from './format'
 import { moodLabel } from './sentiment'
+import { PALETTE } from './palette'
 
 /**
  * 月份块行之间的纵向间距。
@@ -37,8 +38,9 @@ export const WEEKDAY_LABELS = ['一', '二', '三', '四', '五', '六', '日']
 /** 只在画布上标注这几行星期，避免 7 行文字挤在一起 */
 export const WEEKDAY_SHOWN = [0, 2, 4, 6]
 
-export const NO_DATA_HEX = '#16203a'
-export const CANVAS_BG = '#0f172a'
+/** 无记录格子：比画布略深的浅沙色，与有记录的格子区分开 */
+export const NO_DATA_HEX = PALETTE.noData
+export const CANVAS_BG = PALETTE.canvas
 export const TOOLTIP_WIDTH = 224
 
 export interface GridCell {
