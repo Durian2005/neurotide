@@ -159,6 +159,29 @@ describe('按天聚合与分值口径', () => {
   })
 })
 
+describe('命中次数口径（与加权计分同尺子）', () => {
+  it('单条内重复情绪词按实际次数累加，主导词仍按消息条数', () => {
+    const text = ['[2026-09-26 08:00:00] 我: 开心开心开心', '[2026-09-26 20:00:00] 我: 难过难过'].join('\n')
+    const { days } = parseChatLog(text)
+    const day = days[0]!
+
+    // 旧实现按去重写字计数会得到 1 / 1，与「3 次 / 2 次命中」的加权计分自相矛盾
+    expect(day.positiveHits).toBe(3)
+    expect(day.negativeHits).toBe(2)
+    expect(day.topWords.find((item) => item.word === '开心')?.count).toBe(1)
+    expect(day.topWords.find((item) => item.word === '难过')?.count).toBe(1)
+  })
+
+  it('不同日期的命中次数分别归组，不串到别的日期', () => {
+    const text = ['[2026-09-26 08:00:00] 我: 开心开心', '[2026-09-27 08:00:00] 我: 难过'].join('\n')
+    const { days } = parseChatLog(text)
+    expect(days.map((d) => [d.positiveHits, d.negativeHits])).toEqual([
+      [2, 0],
+      [0, 1],
+    ])
+  })
+})
+
 describe('时间范围筛选', () => {
   // 旧实现：new Date(2026, 4 - 3, 31) 溢出成 3 月 3 日；新实现按目标月天数收口到 2 月 28 日
   const days = ['2026-01-15', '2026-02-27', '2026-02-28', '2026-05-31'].map(makeDay)

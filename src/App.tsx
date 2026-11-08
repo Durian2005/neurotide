@@ -17,6 +17,7 @@ import {
 import type { DailyMood, ParseReport, ParseResult, TimeRange } from './utils/parser'
 import { buildSampleChatLog } from './utils/sampleData'
 import { formatFullDate, formatScore } from './utils/format'
+import { createImportGate } from './utils/importGate'
 import { DICTIONARY_SIZE, MOOD_TEXT_CLASS, moodLabel, moodLevel } from './utils/sentiment'
 import { BACKEND_LABEL, resolveDatasetStore } from './utils/browserStorage'
 import { StorageError, buildDatasetMeta, createDatasetId } from './utils/datasetStore'
@@ -56,6 +57,12 @@ export default function App() {
 
   // --- 本地持久化 ---
   const storeRef = useRef<DatasetStore | null>(null)
+  /**
+   * 导入请求门：新请求会让旧请求作废。
+   * 分片解析会让出主线程，期间用户完全可能再拖一份文件；不设令牌的话，
+   * 先发的大文件后完成时就会用旧结果覆盖新数据（含 sourceTextRef 与 activeId）。
+   */
+  const importGate = useMemo(() => createImportGate(), [])
   /** 当前数据的原始文本，供 JSON 备份导出；不入 state，避免每次输入都参与渲染比较 */
   const sourceTextRef = useRef<string | null>(null)
   const [datasets, setDatasets] = useState<DatasetMeta[]>([])
@@ -105,19 +112,31 @@ export default function App() {
 
   /**
    * 大文本分片解析，并在片间上报进度。
+   *
+   * 每次调用领一个自增令牌：开始新导入时 abort 上一次解析，且过期请求的结果
+   * 一律不得落界面、不得清进度条。所有调用方都把 null 当作「本次请求已作废」，
+   * 因此解析之后的 save / setActiveId 也会被一并跳过。
+   *
    * 进度按 120ms 节流：每片都 setState 会让 App 在解析期间被重渲染上百次，
    * 反而把让出主线程换来的顺滑吃回去。
    */
   const parsePayload = useCallback(
-    async (payload: string, name: string, enc: string, signal?: AbortSignal) => {
-      if (payload.length < CHUNK_THRESHOLD_CHARS) return applyText(payload, name, enc)
+    async (payload: string, name: string, enc: string) => {
+      const request = importGate.begin()
+      const { isCurrent } = request
+
+      // 同步路径不会被其它请求插入，仍走同一套令牌检查，避免将来改成异步时漏掉
+      if (payload.length < CHUNK_THRESHOLD_CHARS) {
+        return isCurrent() ? applyText(payload, name, enc) : null
+      }
 
       let lastReportedAt = 0
       setParseProgress(0)
       try {
         const result = await parseChatLogAsync(payload, {
-          signal,
+          signal: request.signal,
           onProgress: ({ processed, total }) => {
+            if (!isCurrent()) return
             const ratio = total > 0 ? processed / total : 1
             const now = Date.now()
             if (processed < total && now - lastReportedAt < 120) return
@@ -125,23 +144,25 @@ export default function App() {
             setParseProgress(ratio)
           },
         })
+        // 被后发请求取代：结果直接丢弃，调用方拿到 null 后不会再写存储
+        if (!isCurrent()) return null
         return applyResult(result, payload, name, enc)
       } catch (failure) {
         // 被取消不算失败：调用方通常已经卸载或换了一份数据
         if (failure instanceof DOMException && failure.name === 'AbortError') return null
         throw failure
       } finally {
-        setParseProgress(null)
+        // 过期请求不能清掉新请求的进度条
+        if (isCurrent()) setParseProgress(null)
       }
     },
-    [applyText, applyResult],
+    [applyText, applyResult, importGate],
   )
 
   // 启动时探测存储后端、列出已保存数据集，并恢复上次会话
   useEffect(() => {
     let cancelled = false
-    // 恢复大文件时也走分片，组件卸载/换数据时取消，避免 StrictMode 下两遍解析互相打
-    const controller = new AbortController()
+    // 恢复大文件时也走分片；组件卸载时 abort 当前请求，避免 StrictMode 下两遍解析互相打
     void (async () => {
       setBusy(true)
       try {
@@ -163,7 +184,7 @@ export default function App() {
         if (cancelled || !active) return
         const dataset = await store.load(active)
         if (cancelled || !dataset) return
-        const restored = await parsePayload(dataset.text, dataset.name, dataset.encoding, controller.signal)
+        const restored = await parsePayload(dataset.text, dataset.name, dataset.encoding)
         if (cancelled || !restored) return
         setActiveId(dataset.id)
         setStorageMessage(`已恢复上次会话：${dataset.name}`)
@@ -175,9 +196,9 @@ export default function App() {
     })()
     return () => {
       cancelled = true
-      controller.abort()
+      importGate.abort()
     }
-  }, [parsePayload])
+  }, [parsePayload, importGate])
 
   const refreshDatasets = useCallback(async () => {
     const store = storeRef.current
@@ -195,6 +216,8 @@ export default function App() {
 
       const result = await parsePayload(payload, datasetName, payloadEncoding)
       if (!result) return
+      // parsePayload 返回非 null 说明此刻仍是最新请求，记下令牌供后续异步写入复核
+      const requestId = importGate.currentId()
 
       const store = storeRef.current
       if (!store || !persistEnabled) {
@@ -208,15 +231,18 @@ export default function App() {
         const id = existing?.id ?? createDatasetId()
         const meta = buildDatasetMeta({ id, name: datasetName, encoding: payloadEncoding, text: payload, result })
         await store.save({ ...meta, text: payload })
+        // save 是最慢的一步 IO；期间若用户又导入了一次，旧请求不得再改 activeId / 列表 / 提示
+        if (importGate.currentId() !== requestId) return
         await store.setActiveId(id)
         await refreshDatasets()
+        if (importGate.currentId() !== requestId) return
         setActiveId(id)
         setStorageMessage(backup ? `已从备份还原并保存：${datasetName}` : `已保存到本机：${datasetName}`)
       } catch (failure) {
         setStorageMessage(describeStorageError(failure))
       }
     },
-    [parsePayload, datasets, persistEnabled, refreshDatasets],
+    [parsePayload, datasets, persistEnabled, refreshDatasets, importGate],
   )
 
   const handleLoadSample = useCallback(() => {
@@ -236,7 +262,9 @@ export default function App() {
           return
         }
         if (await parsePayload(dataset.text, dataset.name, dataset.encoding)) {
+          const requestId = importGate.currentId()
           await store.setActiveId(id)
+          if (importGate.currentId() !== requestId) return
           setActiveId(id)
           setStorageMessage(`已载入：${dataset.name}`)
         }
@@ -246,7 +274,7 @@ export default function App() {
         setBusy(false)
       }
     },
-    [parsePayload, refreshDatasets],
+    [parsePayload, refreshDatasets, importGate],
   )
 
   const handleDeleteDataset = useCallback(

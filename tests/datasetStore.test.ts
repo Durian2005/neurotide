@@ -185,6 +185,58 @@ describe('数据集读写', () => {
     const list = await store.list()
     expect(list.map((item) => item.id)).toEqual(['ok'])
   })
+
+  it('元数据缺字段或字段类型错误时补齐占位值，不会让界面在渲染期抛错', async () => {
+    const backend = createMemoryBackend()
+    const store = makeStore(backend)
+    await backend.set('d:partial:t', '任意正文')
+    await backend.set('d:partial:m', JSON.stringify({ id: 'partial', name: '缺字段' }))
+    await backend.set(
+      'd:badtypes:m',
+      JSON.stringify({
+        id: 'badtypes',
+        name: '字段类型错误',
+        savedAt: '昨天',
+        sizeBytes: null,
+        messageCount: {},
+        dayCount: false,
+        averageScore: 'oops',
+        encoding: 42,
+        formatLabel: null,
+        firstDate: 0,
+        lastDate: [],
+      }),
+    )
+
+    const list = await store.list()
+    expect(list).toHaveLength(2)
+    for (const meta of list) {
+      // 这些字段会被 toFixed() / 算术运算直接消费，必须是有限数
+      expect(Number.isFinite(meta.averageScore)).toBe(true)
+      expect(Number.isFinite(meta.savedAt)).toBe(true)
+      expect(Number.isFinite(meta.sizeBytes)).toBe(true)
+      expect(Number.isFinite(meta.dayCount)).toBe(true)
+      expect(typeof meta.encoding).toBe('string')
+      expect(typeof meta.formatLabel).toBe('string')
+    }
+    expect(list.find((item) => item.id === 'partial')).toMatchObject({
+      averageScore: 0,
+      formatLabel: '未知',
+      firstDate: null,
+    })
+    expect(list.find((item) => item.id === 'badtypes')).toMatchObject({
+      savedAt: 0,
+      encoding: '未知',
+      lastDate: null,
+    })
+
+    // 补齐后的记录仍可被 load 读出并删除，用户不必去清浏览器站点数据自救
+    const loaded = await store.load('partial')
+    expect(loaded?.averageScore).toBe(0)
+    expect(loaded?.text).toBe('任意正文')
+    await store.remove('partial')
+    expect(await store.list()).toHaveLength(1)
+  })
 })
 
 describe('设置项', () => {

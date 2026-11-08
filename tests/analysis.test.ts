@@ -44,6 +44,8 @@ function message(date: string, hour: number, score: number, positive: string[] =
     content: '测试内容',
     positiveWords: positive,
     negativeWords: negative,
+    positiveHitCount: positive.length,
+    negativeHitCount: negative.length,
     spans: [],
     raw: 0,
     score,

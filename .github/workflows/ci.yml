@@ -38,5 +38,8 @@ jobs:
       - name: 类型检查与构建（tsc + vite）
         run: npm run build
 
+      - name: 单文件约束与体积检查
+        run: npm run verify:dist
+
       - name: 入库前脱敏扫描
         run: npm run scan

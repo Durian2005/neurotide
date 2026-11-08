@@ -36,6 +36,13 @@ describe('情绪值格式化', () => {
   it('零不带符号', () => {
     expect(formatScore(0)).toBe('0.00')
   })
+
+  it('非有限数返回占位符，不抛 TypeError', () => {
+    // 持久化元数据被改坏时，averageScore 可能是 undefined / NaN / 字符串
+    for (const value of [undefined, null, Number.NaN, Number.POSITIVE_INFINITY, 'oops']) {
+      expect(formatScore(value as unknown as number)).toBe('—')
+    }
+  })
 })
 
 describe('体积格式化', () => {

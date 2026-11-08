@@ -69,6 +69,16 @@ describe('buildDailyCsv', () => {
     const empty = buildDailyCsv([])
     expect(empty.replace('\uFEFF', '').trimEnd().split('\r\n')).toHaveLength(1)
   })
+
+  it('重复情绪词按实际次数写入「积极命中」列，与加权计分同口径', () => {
+    const repeated = parseChatLog('[2026-09-26 08:00:00] 我: 开心开心开心')
+    const lines = buildDailyCsv(repeated.days).replace('\uFEFF', '').trimEnd().split('\r\n')
+    const cells = lines[1].split(',')
+
+    expect(cells[4]).toBe('3') // 积极命中
+    expect(cells[5]).toBe('0') // 消极命中
+    expect(Number(cells[2])).toBeCloseTo(repeated.days[0]!.raw, 4) // 加权计分
+  })
 })
 
 describe('JSON 备份往返', () => {

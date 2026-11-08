@@ -17,6 +17,9 @@ export interface AnalyzedMessage {
   content: string
   positiveWords: string[]
   negativeWords: string[]
+  /** 未去重的积极 / 消极词命中次数，与 raw 同口径，供按天汇总 */
+  positiveHitCount: number
+  negativeHitCount: number
   /** 命中片段（含否定前缀），用于原文高亮 */
   spans: TextSpan[]
   /** 加权计分：Σ(极性 × 生效权重) */
@@ -263,6 +266,8 @@ function createParseSession(text: string): ParseSession {
       content,
       positiveWords: sentiment.positiveWords,
       negativeWords: sentiment.negativeWords,
+      positiveHitCount: sentiment.positiveHitCount,
+      negativeHitCount: sentiment.negativeHitCount,
       spans: sentiment.hits.map((hit) => ({ start: hit.start, end: hit.end, polarity: hit.polarity })),
       raw: sentiment.raw,
       score: messageScore(sentiment.raw),
@@ -418,14 +423,17 @@ export function aggregateByDay(messages: AnalyzedMessage[]): DailyMood[] {
 
     for (const message of list) {
       raw += message.raw
+      // 命中数按「实际命中次数」累加，与 raw / CSV 加权计分同口径；
+      // ?? 0 兼容外部构造的 AnalyzedMessage（缺少计次字段时退化为不计数）
+      positiveHits += message.positiveHitCount ?? 0
+      negativeHits += message.negativeHitCount ?? 0
+      // 主导词的 count 刻意保持「命中该词的消息条数」语义，不随本次修正改变
       for (const word of message.positiveWords) {
-        positiveHits++
         const item = wordCounter.get(word) ?? { word, count: 0, positive: true }
         item.count++
         wordCounter.set(word, item)
       }
       for (const word of message.negativeWords) {
-        negativeHits++
         const item = wordCounter.get(word) ?? { word, count: 0, positive: false }
         item.count++
         wordCounter.set(word, item)

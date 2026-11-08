@@ -164,6 +164,26 @@ export interface DatasetStore {
   setSettings(settings: Settings): Promise<void>
 }
 
+function coerceText(value: unknown, fallback: string): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function coerceFinite(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function coerceDate(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+/**
+ * 反序列化元数据：逐字段校验并补齐，绝不把未经验证的对象当成 DatasetMeta。
+ *
+ * 这些数据来自 IndexedDB / localStorage，可能被旧版本 schema、写入中断或外部工具改坏。
+ * 早期实现只检查 id / name 就强制断言，缺 averageScore 时 formatScore 会在渲染期
+ * 调 undefined.toFixed() 抛错 —— 没有 ErrorBoundary 的情况下整棵 React 树被卸载，
+ * 刷新后必现，连「清空本地数据」都点不到。因此宁可显示成占位值让用户能删掉它。
+ */
 function parseMeta(raw: string | null): DatasetMeta | null {
   if (!raw) return null
   let parsed: unknown
@@ -174,8 +194,23 @@ function parseMeta(raw: string | null): DatasetMeta | null {
   }
   if (!parsed || typeof parsed !== 'object') return null
   const candidate = parsed as Partial<DatasetMeta>
-  if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') return null
-  return candidate as DatasetMeta
+  // 只有 id / name 是身份标识，缺失就无法定位与删除，直接跳过；其余字段一律可恢复
+  if (typeof candidate.id !== 'string' || !candidate.id) return null
+  if (typeof candidate.name !== 'string') return null
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    savedAt: coerceFinite(candidate.savedAt),
+    encoding: coerceText(candidate.encoding, '未知'),
+    sizeBytes: coerceFinite(candidate.sizeBytes),
+    messageCount: coerceFinite(candidate.messageCount),
+    dayCount: coerceFinite(candidate.dayCount),
+    firstDate: coerceDate(candidate.firstDate),
+    lastDate: coerceDate(candidate.lastDate),
+    averageScore: coerceFinite(candidate.averageScore),
+    formatLabel: coerceText(candidate.formatLabel, '未知'),
+  }
 }
 
 export function createDatasetStore(backend: KvBackend): DatasetStore {

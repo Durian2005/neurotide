@@ -30,10 +30,13 @@ export interface SentimentHit extends TextSpan {
 }
 
 export interface MessageSentiment {
-  /** 命中的积极词（去重，按出现顺序） */
+  /** 命中的积极词（去重，按出现顺序）：用于词云与主导词，语义是「命中该词的消息条数」 */
   positiveWords: string[]
   /** 命中的消极词（去重，按出现顺序） */
   negativeWords: string[]
+  /** 未去重的命中次数，与 raw 的累加口径一致；按天汇总的「命中数」用它 */
+  positiveHitCount: number
+  negativeHitCount: number
   /** 加权计分：Σ(极性 × 生效权重) */
   raw: number
   /** 逐条命中明细，供高亮与解释使用 */
@@ -45,9 +48,6 @@ export interface ScreenshotSentiment extends MessageSentiment {
   text: string
   /** 单图归一化分值，范围 [-1, 1] */
   score: number
-  /** 情绪词命中次数，重复出现在不同文本行时分别计数 */
-  positiveHitCount: number
-  negativeHitCount: number
   /** 词典规则识别出的词汇，不代表临床结论 */
   label: 'positive' | 'neutral' | 'negative'
 }
@@ -426,14 +426,19 @@ export function analyzeText(content: string): MessageSentiment {
   const positiveWords: string[] = []
   const negativeWords: string[] = []
   let raw = 0
+  let positiveHitCount = 0
+  let negativeHitCount = 0
 
   for (const hit of hits) {
     raw += hit.polarity * hit.weight
+    // 计分按全部命中累加，命中次数必须同口径；去重只用于「出现过哪些词」
+    if (hit.polarity === 1) positiveHitCount++
+    else negativeHitCount++
     const bucket = hit.polarity === 1 ? positiveWords : negativeWords
     if (!bucket.includes(hit.word)) bucket.push(hit.word)
   }
 
-  return { positiveWords, negativeWords, raw, hits }
+  return { positiveWords, negativeWords, positiveHitCount, negativeHitCount, raw, hits }
 }
 
 // 单条文本的展示用分值：压缩到 [-1, 1]

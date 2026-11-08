@@ -39,6 +39,37 @@ describe('极性判定与否定作用域', () => {
   })
 })
 
+describe('命中次数口径', () => {
+  it('重复出现的情绪词按次数计，去重只用于词表', () => {
+    const single = analyzeText('开心')
+    const repeated = analyzeText('开心开心开心')
+
+    expect(repeated.positiveWords).toEqual(['开心'])
+    expect(repeated.hits).toHaveLength(3)
+    expect(repeated.positiveHitCount).toBe(3)
+    expect(repeated.negativeHitCount).toBe(0)
+    // 命中次数与计分同口径：3 次命中就是 3 份权重
+    expect(repeated.raw).toBeCloseTo(single.raw * 3, 10)
+  })
+
+  it('消极词与否定翻转后同样按次数计', () => {
+    const sad = analyzeText('难过难过')
+    expect(sad.negativeHitCount).toBe(2)
+    expect(sad.positiveHitCount).toBe(0)
+
+    const negated = analyzeText('不开心不开心')
+    expect(negated.negativeHitCount).toBe(2)
+    expect(negated.positiveHitCount).toBe(0)
+  })
+
+  it('截图模式与单条文本使用同一把尺子', () => {
+    const shot = analyzeScreenshotText('开心开心开心')
+    expect(shot.positiveWords).toEqual(['开心'])
+    expect(shot.positiveHitCount).toBe(3)
+    expect(shot.positiveHitCount).toBe(analyzeText('开心开心开心').positiveHitCount)
+  })
+})
+
 describe('子串误命中（单字词条的邻接屏蔽）', () => {
   it('「积累了很多经验」不再命中「累」', () => {
     expect(analyzeText('积累了很多经验').raw).toBe(0)

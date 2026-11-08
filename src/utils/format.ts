@@ -20,7 +20,9 @@ export function formatShortDate(date: Date): string {
 }
 
 // 情绪值带符号显示：+0.42 / -0.18 / 0.00
+// 非有限数返回占位符：元数据来自持久化存储，损坏时不能在渲染期抛错导致白屏
 export function formatScore(score: number): string {
+  if (!Number.isFinite(score)) return '—'
   const fixed = score.toFixed(2)
   return score > 0 ? `+${fixed}` : fixed
 }
